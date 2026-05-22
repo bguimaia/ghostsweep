@@ -1118,10 +1118,12 @@ $syncWindowHeight = {
     $tmrH.Interval = [TimeSpan]::FromMilliseconds(60)
     $tmrH.Add_Tick({
         $tmrH.Stop()
-        # Re-aplica SizeToContent para ajustar altura ao conteudo atual
+        # Zera MinHeight antes — sem isso, SizeToContent=Height nao consegue encolher
+        # quando um painel colapsa (ficava travado no tamanho expandido anterior)
+        $window.MinHeight = 0
         $window.SizeToContent = [System.Windows.SizeToContent]::Manual
         $window.SizeToContent = [System.Windows.SizeToContent]::Height
-        # Apos layout concluir, trava MinHeight no novo tamanho
+        # Apos layout concluir, trava MinHeight no novo tamanho (expandido ou colapsado)
         $window.Dispatcher.BeginInvoke([Action]{
             if ($window.ActualHeight -gt 0) {
                 $window.MinHeight = $window.ActualHeight
