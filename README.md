@@ -1,14 +1,19 @@
-# GhostSweep
+<p align="center">
+  <img src="assets/Logo-Full.png" alt="GhostSweep" width="480"/>
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0-orange.svg)](https://github.com/bguimaia/ghostsweep/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows-0078D4?logo=windows&logoColor=white)]()
-[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)]()
-[![No Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)]()
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"/></a>
+  <img src="https://img.shields.io/badge/version-1.0-orange.svg" alt="Version 1.0"/>
+  <img src="https://img.shields.io/badge/platform-Windows-0078D4?logo=windows&logoColor=white" alt="Platform: Windows"/>
+  <img src="https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white" alt="PowerShell 5.1+"/>
+  <img src="https://img.shields.io/badge/dependencies-none-brightgreen" alt="No Dependencies"/>
+</p>
 
-**Remove macOS ghost files from any Windows folder — no installs, no dependencies, no admin rights.**
-
-`.DS_Store` · `._*` resource forks · `__MACOSX` · `.Spotlight-V100` · `.Trashes`
+<p align="center">
+  <strong>Remove macOS ghost files from any Windows folder — no installs, no dependencies, no admin rights.</strong><br/>
+  <code>.DS_Store</code> · <code>._*</code> resource forks · <code>__MACOSX</code> · <code>.Spotlight-V100</code> · <code>.Trashes</code>
+</p>
 
 ---
 
@@ -176,17 +181,22 @@ Built by **Bruno Maia** and **Claude**.
 ---
 ---
 
-# GhostSweep
+<p align="center">
+  <img src="assets/Logo-Full.png" alt="GhostSweep" width="480"/>
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0-orange.svg)](https://github.com/bguimaia/ghostsweep/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows-0078D4?logo=windows&logoColor=white)]()
-[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)]()
-[![No Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)]()
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"/></a>
+  <img src="https://img.shields.io/badge/version-1.0-orange.svg" alt="Version 1.0"/>
+  <img src="https://img.shields.io/badge/platform-Windows-0078D4?logo=windows&logoColor=white" alt="Platform: Windows"/>
+  <img src="https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white" alt="PowerShell 5.1+"/>
+  <img src="https://img.shields.io/badge/dependencies-none-brightgreen" alt="No Dependencies"/>
+</p>
 
-**Remove arquivos fantasma do macOS de qualquer pasta no Windows — sem instalar nada, sem dependências, sem permissão de administrador.**
-
-`.DS_Store` · `._*` resource forks · `__MACOSX` · `.Spotlight-V100` · `.Trashes`
+<p align="center">
+  <strong>Remove arquivos fantasma do macOS de qualquer pasta no Windows — sem instalar nada, sem dependências, sem permissão de administrador.</strong><br/>
+  <code>.DS_Store</code> · <code>._*</code> resource forks · <code>__MACOSX</code> · <code>.Spotlight-V100</code> · <code>.Trashes</code>
+</p>
 
 ---
 

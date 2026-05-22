@@ -1381,7 +1381,7 @@ $c["btnSaveLog"].Add_Click({
     $dlg.Title            = "Salvar log de limpeza"
     $dlg.Filter           = "Arquivo de texto (*.txt)|*.txt"
     $startTs = if ($app["logDateStart"]) { $app["logDateStart"].ToString('yyyy-MM-dd_HH-mm-ss') } else { Get-Date -Format 'yyyy-MM-dd_HH-mm-ss' }
-    $dlg.FileName         = "mac-junk-cleaner-$startTs.txt"
+    $dlg.FileName         = "ghostsweep-$startTs.txt"
     $dlg.InitialDirectory = [System.Environment]::GetFolderPath("Desktop")
 
     if ($dlg.ShowDialog($window)) {
@@ -1470,6 +1470,19 @@ if ($lastF -and (Test-Path -LiteralPath $lastF -PathType Container)) {
     $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
     $c["btnScan"].IsEnabled  = $true
     $c["lblStatus"].Text     = "Ultima pasta carregada. Clique em Escanear ou arraste uma nova."
+}
+
+# Icone da janela (titulo + taskbar) — carrega assets/Icone_256x256.png se disponivel
+$scriptDir = if ($MyInvocation.MyCommand.Path) { Split-Path -Parent $MyInvocation.MyCommand.Path } else { $null }
+if ($scriptDir) {
+    $iconPath = Join-Path $scriptDir "assets\Icone_256x256.png"
+    if (Test-Path $iconPath) {
+        try {
+            $window.Icon = [System.Windows.Media.Imaging.BitmapFrame]::Create(
+                [System.Uri]::new($iconPath, [System.UriKind]::Absolute)
+            )
+        } catch {}
+    }
 }
 
 # Escala largura pela resolucao da tela: min(max(560, sw*0.32), 720)
