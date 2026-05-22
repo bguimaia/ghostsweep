@@ -1119,7 +1119,7 @@ $syncWindowHeight = {
     $tmrH.Add_Tick({
         $tmrH.Stop()
         # Re-aplica SizeToContent para ajustar altura ao conteudo atual
-        $window.SizeToContent = [System.Windows.SizeToContent]::None
+        $window.SizeToContent = [System.Windows.SizeToContent]::Manual
         $window.SizeToContent = [System.Windows.SizeToContent]::Height
         # Apos layout concluir, trava MinHeight no novo tamanho
         $window.Dispatcher.BeginInvoke([Action]{
