@@ -504,10 +504,11 @@ public class MacJunkDeleter {
               </StackPanel>
             </Button>
             <Popup x:Name="popHistory" Placement="Bottom" StaysOpen="False"
-                   PlacementTarget="{Binding ElementName=btnHistory}"
-                   AllowsTransparency="True">
+                   PlacementTarget="{Binding ElementName=pathBorder}"
+                   AllowsTransparency="True" VerticalOffset="4">
               <Border Background="#1a1a1a" BorderBrush="#333" BorderThickness="1"
-                      CornerRadius="7" Padding="4" MinWidth="320">
+                      CornerRadius="7" Padding="4"
+                      MinWidth="{Binding ActualWidth, ElementName=pathBorder}">
                 <ListBox x:Name="lstHistory" Background="Transparent" BorderThickness="0"
                          Foreground="#ccc" FontSize="12" Padding="0" MaxHeight="160"/>
               </Border>
@@ -650,9 +651,14 @@ public class MacJunkDeleter {
         <StackPanel x:Name="spBreakdown" Margin="0,6,0,0"/>
         <!-- Botoes inferiores do card -->
         <WrapPanel Margin="0,14,0,0">
-          <Button x:Name="btnToggle" Content="ver detalhes"
-                  Style="{StaticResource SBtn}" Visibility="Collapsed"
-                  Margin="0,0,8,0" FontSize="13" Padding="12,8"/>
+          <Button x:Name="btnToggle" Style="{StaticResource SBtn}" Visibility="Collapsed"
+                  Margin="0,0,8,0" FontSize="13" Padding="12,8">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock x:Name="lblToggleIco" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets"
+                         FontSize="11" VerticalAlignment="Center" Margin="0,0,7,0"/>
+              <TextBlock x:Name="lblToggleTxt" Text="Ver detalhes" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
           <Button x:Name="btnSaveLog" Style="{StaticResource SBtn}" Visibility="Collapsed"
                   Margin="0,0,8,0" FontSize="13" Padding="12,8">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -740,19 +746,19 @@ public class MacJunkDeleter {
               CornerRadius="4" Padding="6,3" Margin="0,0,6,0">
         <TextBlock Text="Enter" Foreground="#888" FontSize="11"/>
       </Border>
-      <TextBlock Text="escanear" Foreground="#444" FontSize="11"
+      <TextBlock Text="Escanear" Foreground="#444" FontSize="11"
                  VerticalAlignment="Center" Margin="0,0,16,0"/>
       <Border Background="#1a1a1a" BorderBrush="#333" BorderThickness="1"
               CornerRadius="4" Padding="6,3" Margin="0,0,6,0">
         <TextBlock Text="Del" Foreground="#888" FontSize="11"/>
       </Border>
-      <TextBlock Text="mover" Foreground="#444" FontSize="11"
+      <TextBlock Text="Mover" Foreground="#444" FontSize="11"
                  VerticalAlignment="Center" Margin="0,0,16,0"/>
       <Border Background="#1a1a1a" BorderBrush="#333" BorderThickness="1"
               CornerRadius="4" Padding="6,3" Margin="0,0,6,0">
         <TextBlock Text="Esc" Foreground="#888" FontSize="11"/>
       </Border>
-      <TextBlock Text="cancelar" Foreground="#444" FontSize="11"
+      <TextBlock Text="Cancelar" Foreground="#444" FontSize="11"
                  VerticalAlignment="Center"/>
     </StackPanel>
   </Grid>
@@ -765,7 +771,7 @@ $window = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader
 $c = @{}
 "btnSelect","pathBorder","lblPath","lblCount","lblCountLabel","lblSize","spBreakdown",
 "imgLogo",
-"lblAdvancedTxt",
+"lblAdvancedTxt","lblToggleTxt","lblToggleIco",
 "btnToggle","btnSaveLog","btnOpenRecycleBin","btnAdvanced","pnlAdvanced","pnlDropHint","pnlResultsCard","pnlDetails","lstFiles",
 "btnHistory","popHistory","lstHistory",
 "pbMain","lblProgTxt","lblProgPct","btnScan","btnDelete","btnCancel","lblStatus",
@@ -1105,7 +1111,8 @@ $resetPathError = {
 $closeDetails = {
     if ($app.detailsOpen) {
         $c["pnlDetails"].Visibility = "Collapsed"
-        $c["btnToggle"].Content     = "ver detalhes"
+        $c["lblToggleTxt"].Text     = "Ver detalhes"
+        $c["lblToggleIco"].Text     = [char]0xE76C
         $app.detailsOpen            = $false
     }
 }.GetNewClosure()
@@ -1311,10 +1318,12 @@ $c["btnToggle"].Add_Click({
     $app.detailsOpen = -not $app.detailsOpen
     if ($app.detailsOpen) {
         $c["pnlDetails"].Visibility = "Visible"
-        $c["btnToggle"].Content     = "ocultar detalhes"
+        $c["lblToggleTxt"].Text     = "Ocultar detalhes"
+        $c["lblToggleIco"].Text     = [char]0xE76D
     } else {
         $c["pnlDetails"].Visibility = "Collapsed"
-        $c["btnToggle"].Content     = "ver detalhes"
+        $c["lblToggleTxt"].Text     = "Ver detalhes"
+        $c["lblToggleIco"].Text     = [char]0xE76C
     }
     & $syncWindowHeight
 })
