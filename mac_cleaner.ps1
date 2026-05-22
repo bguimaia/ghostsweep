@@ -74,39 +74,65 @@ public class FolderDialog {
 }
 "@ }
 
-# C# helper: deleta em background thread seguro (sem PS runspace)
+# C# helper: move itens para Lixeira via SHFileOperation (Win32 Shell) — suporta desfazer
 if (-not ([System.Management.Automation.PSTypeName]'MacJunkDeleter').Type) { Add-Type @"
 using System;
 using System.IO;
 using System.Collections;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 public class MacJunkDeleter {
+    [DllImport("shell32.dll", CharSet = CharSet.Auto)]
+    private static extern int SHFileOperation(ref SHFILEOPSTRUCT FileOp);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct SHFILEOPSTRUCT {
+        public IntPtr hwnd;
+        [MarshalAs(UnmanagedType.U4)] public int wFunc;
+        public string pFrom;
+        public string pTo;
+        public short fFlags;
+        [MarshalAs(UnmanagedType.Bool)] public bool fAnyOperationsAborted;
+        public IntPtr hNameMappings;
+        public string lpszProgressTitle;
+    }
+
+    private const int   FO_DELETE          = 0x0003;
+    private const short FOF_ALLOWUNDO      = 0x0040; // envia para Lixeira
+    private const short FOF_NOCONFIRMATION = 0x0010;
+    private const short FOF_SILENT         = 0x0004;
+    private const short FOF_NOERRORUI      = 0x0400;
+
     public static void DeleteAsync(string[] items, Hashtable sync) {
         var t = new Thread(() => {
             int deleted = 0, errors = 0, progress = 0;
             foreach (string item in items) {
-                if (string.IsNullOrEmpty(item)) { progress++; continue; }
+                if (string.IsNullOrEmpty(item)) { progress++; sync["progress"] = progress; continue; }
+
+                // Item ja nao existe (pai removido antes) — conta como deletado
+                bool isDir  = Directory.Exists(item);
+                bool isFile = !isDir && File.Exists(item);
+                if (!isDir && !isFile) {
+                    deleted++; progress++;
+                    sync["deleted"] = deleted; sync["progress"] = progress;
+                    continue;
+                }
+
                 try {
-                    FileAttributes attr = File.GetAttributes(item);
-                    if ((attr & FileAttributes.Directory) != 0) {
-                        // Strip ReadOnly from all subdirs and files inside (common in __MACOSX)
-                        try {
-                            foreach (string d in Directory.GetDirectories(item, "*", SearchOption.AllDirectories))
-                                File.SetAttributes(d, FileAttributes.Normal);
-                            foreach (string f in Directory.GetFiles(item, "*", SearchOption.AllDirectories))
-                                File.SetAttributes(f, FileAttributes.Normal);
-                        } catch { }
-                        File.SetAttributes(item, FileAttributes.Normal);
-                        Directory.Delete(item, true);
-                    } else {
-                        File.SetAttributes(item, FileAttributes.Normal);
-                        File.Delete(item);
-                    }
-                    deleted++;
-                } catch (FileNotFoundException)      { deleted++; } // ja removido (pai deletado antes)
-                catch (DirectoryNotFoundException)   { deleted++; }
-                catch                                { errors++; }
+                    // pFrom requer duplo null-terminator conforme API Win32
+                    var op = new SHFILEOPSTRUCT {
+                        hwnd   = IntPtr.Zero,
+                        wFunc  = FO_DELETE,
+                        pFrom  = item + "\0\0",
+                        pTo    = null,
+                        fFlags = unchecked((short)(FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI))
+                    };
+                    int ret = SHFileOperation(ref op);
+                    if (ret == 0 && !op.fAnyOperationsAborted) deleted++;
+                    else errors++;
+                } catch { errors++; }
+
                 progress++;
                 sync["deleted"]  = deleted;
                 sync["errors"]   = errors;
@@ -115,6 +141,7 @@ public class MacJunkDeleter {
             sync["done"] = true;
         });
         t.IsBackground = true;
+        t.SetApartmentState(ApartmentState.STA); // Shell API requer STA
         t.Start();
     }
 }
@@ -128,6 +155,7 @@ public class MacJunkDeleter {
         Height="450" Width="520"
         MinHeight="450" MinWidth="520"
         WindowStartupLocation="CenterScreen"
+        AllowDrop="True"
         FontFamily="Inter, Segoe UI"
         Background="#0d0d0d">
   <Window.Resources>
@@ -320,15 +348,32 @@ public class MacJunkDeleter {
       </Border>
     </Grid>
 
-    <!-- Card de resultados -->
-    <Border Grid.Row="2" Background="#161616" CornerRadius="10"
+    <!-- Drop hint (estado inicial — visivel ate primeiro scan) -->
+    <Border x:Name="pnlDropHint" Grid.Row="2"
+            Background="#111" CornerRadius="10"
+            BorderBrush="#2a2a2a" BorderThickness="1.5"
+            Padding="20,36" Margin="0,0,0,12"
+            Visibility="Visible">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+        <TextBlock Text="&#x2B07;" FontSize="22" Foreground="#333"
+                   HorizontalAlignment="Center" Margin="0,0,0,10"/>
+        <TextBlock Text="Arraste uma pasta aqui" FontSize="13" FontWeight="SemiBold"
+                   Foreground="#555" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+        <TextBlock Text="ou use o botao Selecionar Pasta acima" FontSize="11"
+                   Foreground="#333" HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Card de resultados (aparece apos primeiro scan) -->
+    <Border x:Name="pnlResultsCard" Grid.Row="2" Background="#161616" CornerRadius="10"
             BorderBrush="#2a2a2a" BorderThickness="1"
-            Padding="18,16" Margin="0,0,0,12">
+            Padding="18,16" Margin="0,0,0,12"
+            Visibility="Collapsed">
       <StackPanel>
-        <TextBlock x:Name="lblCount" Text="--" FontSize="28" FontWeight="Bold" Foreground="#FDEABF"/>
-        <TextBlock x:Name="lblBreakdown"
-                   Text="Selecione uma pasta e clique em Escanear."
-                   Foreground="#888" FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap"/>
+        <TextBlock x:Name="lblCount"     Text="--"  FontSize="28" FontWeight="Bold" Foreground="#FDEABF"/>
+        <TextBlock x:Name="lblSize"      Text=""    FontSize="12" Foreground="#888" Margin="0,2,0,0"/>
+        <TextBlock x:Name="lblBreakdown" Text=""
+                   Foreground="#888" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"/>
         <Button x:Name="btnToggle" Content="ver detalhes"
                 Style="{StaticResource SBtn}" Visibility="Collapsed"
                 HorizontalAlignment="Left" Margin="0,12,0,0" FontSize="11" Padding="10,6"/>
@@ -366,8 +411,8 @@ public class MacJunkDeleter {
         <ColumnDefinition Width="12"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
-      <Button x:Name="btnScan"   Content="Escanear"     Style="{StaticResource SBtn}" Grid.Column="0" IsEnabled="False"/>
-      <Button x:Name="btnDelete" Content="Deletar tudo" Style="{StaticResource PBtn}" Grid.Column="2" IsEnabled="False"/>
+      <Button x:Name="btnScan"   Content="Escanear"           Style="{StaticResource SBtn}" Grid.Column="0" IsEnabled="False"/>
+      <Button x:Name="btnDelete" Content="Mover para Lixeira" Style="{StaticResource PBtn}" Grid.Column="2" IsEnabled="False"/>
     </Grid>
 
     <!-- Status -->
@@ -381,7 +426,8 @@ public class MacJunkDeleter {
 $window = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader $xaml))
 
 $c = @{}
-"btnSelect","lblPath","lblCount","lblBreakdown","btnToggle","pnlDetails","lstFiles",
+"btnSelect","lblPath","lblCount","lblBreakdown","lblSize",
+"btnToggle","pnlDropHint","pnlResultsCard","pnlDetails","lstFiles",
 "pbMain","lblProgTxt","lblProgPct","btnScan","btnDelete","lblStatus" | ForEach-Object {
     $c[$_] = $window.FindName($_)
 }
@@ -393,10 +439,33 @@ $app = [System.Collections.Hashtable]::Synchronized(@{
     detailsOpen = $false
 })
 
-# ── Helper: converter cor hex -> Brush ────────────────────────────────────────
+# ── Helpers ────────────────────────────────────────────────────────────────────
 function Get-Brush([string]$hex) {
     $col = [System.Windows.Media.ColorConverter]::ConvertFromString($hex)
     [System.Windows.Media.SolidColorBrush]::new($col)
+}
+
+# Calcula tamanho total de um arquivo ou pasta (recursivo)
+function Get-ItemSize([string]$Path) {
+    try {
+        if ([System.IO.Directory]::Exists($Path)) {
+            $sum = [long]0
+            foreach ($f in [System.IO.Directory]::GetFiles($Path, "*", [System.IO.SearchOption]::AllDirectories)) {
+                try { $sum += ([System.IO.FileInfo]::new($f)).Length } catch {}
+            }
+            $sum
+        } else {
+            ([System.IO.FileInfo]::new($Path)).Length
+        }
+    } catch { [long]0 }
+}
+
+# Formata bytes em unidade legivel
+function Format-Size([long]$bytes) {
+    if     ($bytes -ge 1073741824) { "{0:F1} GB" -f ($bytes / 1073741824) }
+    elseif ($bytes -ge 1048576)    { "{0:F1} MB" -f ($bytes / 1048576)    }
+    elseif ($bytes -ge 1024)       { "{0:F0} KB" -f ($bytes / 1024)       }
+    else                           { "$bytes B" }
 }
 
 # ── Scan: encontra arquivos macOS ──────────────────────────────────────────────
@@ -418,42 +487,23 @@ function Find-MacJunk([string]$Path) {
     $list | Select-Object -Unique | ForEach-Object { [string]$_ }
 }
 
-# ── Eventos ────────────────────────────────────────────────────────────────────
-
-# Selecionar pasta — picker moderno IFileDialog
-$c["btnSelect"].Add_Click({
-    $hwnd   = (New-Object System.Windows.Interop.WindowInteropHelper($window)).Handle
-    $picked = [FolderDialog]::ShowDialog($hwnd, "Selecionar pasta para limpar arquivos macOS")
-    if ($picked) {
-        $app.folder              = $picked
-        $c["lblPath"].Text       = $picked
-        $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
-        $c["btnScan"].IsEnabled  = $true
-        $c["lblStatus"].Text     = "Pasta selecionada. Clique em Escanear."
-        $c["lblCount"].Text      = "--"
-        $c["lblBreakdown"].Text  = "Pronto para escanear."
-        $c["lblBreakdown"].Foreground = Get-Brush "#888"
-        $c["btnToggle"].Visibility    = "Collapsed"
-        $c["pnlDetails"].Visibility   = "Collapsed"
-        $c["btnDelete"].IsEnabled     = $false
-        $c["pbMain"].Value            = 0
-        $c["lblProgTxt"].Text         = ""
-        $c["lblProgPct"].Text         = ""
-    }
-})
-
-# Escanear
-$c["btnScan"].Add_Click({
+# ── Logica de scan (reutilizada por picker, drop e botao Escanear) ─────────────
+$doScan = {
     $c["lblStatus"].Text          = "Escaneando..."
     $c["btnScan"].IsEnabled       = $false
     $c["btnDelete"].IsEnabled     = $false
     $c["lblCount"].Text           = "..."
+    $c["lblSize"].Text            = ""
     $c["lblBreakdown"].Text       = "Buscando arquivos macOS..."
     $c["lblBreakdown"].Foreground = Get-Brush "#888"
     $c["lstFiles"].Items.Clear()
     $c["pbMain"].Value            = 0
     $c["lblProgTxt"].Text         = ""
     $c["lblProgPct"].Text         = ""
+
+    # Transiciona para card de resultados (colapsa drop hint)
+    $c["pnlDropHint"].Visibility    = "Collapsed"
+    $c["pnlResultsCard"].Visibility = "Visible"
 
     # Libera UI antes de bloquear no scan
     $window.Dispatcher.Invoke([Action]{}, [System.Windows.Threading.DispatcherPriority]::ApplicationIdle)
@@ -463,16 +513,21 @@ $c["btnScan"].Add_Click({
 
     if ($found.Count -eq 0) {
         $c["lblCount"].Text           = "0 itens"
+        $c["lblSize"].Text            = ""
         $c["lblBreakdown"].Text       = "Pasta limpa! Nenhum arquivo macOS encontrado."
         $c["lblBreakdown"].Foreground = Get-Brush "#7AB898"
         $c["btnToggle"].Visibility    = "Collapsed"
         $c["lblStatus"].Text          = "Scan concluido. Pasta ja esta limpa."
     } else {
-        $ds = @($found | Where-Object { $_ -match "[/\\]\.DS_Store$"           }).Count
-        $rf = @($found | Where-Object { (Split-Path $_ -Leaf) -like "._*"      }).Count
-        $mx = @($found | Where-Object { (Split-Path $_ -Leaf) -eq "__MACOSX"   }).Count
+        # Tamanho total para liberar
+        $totalBytes = [long]0
+        foreach ($item in $found) { $totalBytes += Get-ItemSize $item }
+
+        $ds = @($found | Where-Object { $_ -match "[/\\]\.DS_Store$"                }).Count
+        $rf = @($found | Where-Object { (Split-Path $_ -Leaf) -like "._*"           }).Count
+        $mx = @($found | Where-Object { (Split-Path $_ -Leaf) -eq "__MACOSX"        }).Count
         $sp = @($found | Where-Object { (Split-Path $_ -Leaf) -eq ".Spotlight-V100" }).Count
-        $tr = @($found | Where-Object { (Split-Path $_ -Leaf) -eq ".Trashes"   }).Count
+        $tr = @($found | Where-Object { (Split-Path $_ -Leaf) -eq ".Trashes"        }).Count
 
         $parts = @()
         if ($ds -gt 0) { $parts += ".DS_Store: $ds"   }
@@ -482,15 +537,97 @@ $c["btnScan"].Add_Click({
         if ($tr -gt 0) { $parts += ".Trashes: $tr"    }
 
         $c["lblCount"].Text           = "$($found.Count) itens encontrados"
+        $c["lblSize"].Text            = "$(Format-Size $totalBytes) para liberar"
         $c["lblBreakdown"].Text       = ($parts -join "  $([char]0x00B7)  ")
         $c["lblBreakdown"].Foreground = Get-Brush "#888"
         $c["btnToggle"].Visibility    = "Visible"
         $c["btnDelete"].IsEnabled     = $true
-        $c["lblStatus"].Text          = "Scan concluido. $($found.Count) itens prontos para deletar."
+        $c["lblStatus"].Text          = "Scan concluido. $($found.Count) itens prontos para mover para Lixeira."
 
         $found | ForEach-Object { $c["lstFiles"].Items.Add($_) | Out-Null }
     }
     $c["btnScan"].IsEnabled = $true
+}.GetNewClosure()
+
+# ── Helper interno: reseta detalhe aberto ─────────────────────────────────────
+$closeDetails = {
+    if ($app.detailsOpen) {
+        $c["pnlDetails"].Visibility = "Collapsed"
+        $c["btnToggle"].Content     = "ver detalhes"
+        $app.detailsOpen            = $false
+        $window.Height              = 450
+    }
+}.GetNewClosure()
+
+# ── Eventos ────────────────────────────────────────────────────────────────────
+
+# Selecionar pasta — picker moderno + auto-scan
+$c["btnSelect"].Add_Click({
+    $hwnd   = (New-Object System.Windows.Interop.WindowInteropHelper($window)).Handle
+    $picked = [FolderDialog]::ShowDialog($hwnd, "Selecionar pasta para limpar arquivos macOS")
+    if ($picked) {
+        $app.folder              = $picked
+        $c["lblPath"].Text       = $picked
+        $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
+        $c["btnScan"].IsEnabled  = $true
+        & $closeDetails
+        & $doScan
+    }
+})
+
+# Escanear
+$c["btnScan"].Add_Click({
+    & $doScan
+})
+
+# Drag over — destaca zona de drop com cor accent
+$window.Add_DragOver({
+    $e = $args[1]
+    if ($e.Data.GetDataPresent([System.Windows.DataFormats]::FileDrop)) {
+        $e.Effects = [System.Windows.DragDropEffects]::Copy
+        $c["pnlDropHint"].BorderBrush    = Get-Brush "#FDEABF"
+        $c["pnlResultsCard"].BorderBrush = Get-Brush "#FDEABF"
+    } else {
+        $e.Effects = [System.Windows.DragDropEffects]::None
+    }
+    $e.Handled = $true
+})
+
+# Drag leave — remove destaque ao sair da janela
+$window.Add_DragLeave({
+    $e = $args[1]
+    try {
+        $pt = $e.GetPosition($window)
+        if ($pt.X -le 0 -or $pt.Y -le 0 -or $pt.X -ge $window.ActualWidth -or $pt.Y -ge $window.ActualHeight) {
+            $c["pnlDropHint"].BorderBrush    = Get-Brush "#2a2a2a"
+            $c["pnlResultsCard"].BorderBrush = Get-Brush "#2a2a2a"
+        }
+    } catch {
+        $c["pnlDropHint"].BorderBrush    = Get-Brush "#2a2a2a"
+        $c["pnlResultsCard"].BorderBrush = Get-Brush "#2a2a2a"
+    }
+    $e.Handled = $true
+})
+
+# Drop — aceita pasta arrastada e dispara scan automatico
+$window.Add_Drop({
+    $e = $args[1]
+    $c["pnlDropHint"].BorderBrush    = Get-Brush "#2a2a2a"
+    $c["pnlResultsCard"].BorderBrush = Get-Brush "#2a2a2a"
+
+    if ($e.Data.GetDataPresent([System.Windows.DataFormats]::FileDrop)) {
+        $files  = $e.Data.GetData([System.Windows.DataFormats]::FileDrop)
+        $folder = @($files) | Where-Object { [System.IO.Directory]::Exists($_) } | Select-Object -First 1
+        if ($folder) {
+            $app.folder              = $folder
+            $c["lblPath"].Text       = $folder
+            $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
+            $c["btnScan"].IsEnabled  = $true
+            & $closeDetails
+            & $doScan
+        }
+    }
+    $e.Handled = $true
 })
 
 # Duplo clique na lista — abre pasta pai no Explorer com item destacado
@@ -518,16 +655,16 @@ $c["btnToggle"].Add_Click({
     }
 })
 
-# Deletar
+# Mover para Lixeira
 $c["btnDelete"].Add_Click({
     $total = $app.items.Count
     $path  = $app.folder
 
     $r = [System.Windows.MessageBox]::Show(
-        "Deletar $total itens em:`n$path`n`nEsta acao nao pode ser desfeita.",
-        "Confirmar delecao",
+        "Mover $total itens para a Lixeira?`n`n$path`n`nVoce pode restaura-los pela Lixeira do Windows.",
+        "Confirmar",
         [System.Windows.MessageBoxButton]::YesNo,
-        [System.Windows.MessageBoxImage]::Warning
+        [System.Windows.MessageBoxImage]::Question
     )
     if ($r -ne [System.Windows.MessageBoxResult]::Yes) { return }
 
@@ -537,7 +674,7 @@ $c["btnDelete"].Add_Click({
     $c["pbMain"].Value         = 0
     $c["lblProgTxt"].Text      = "0 / $total"
     $c["lblProgPct"].Text      = "0%"
-    $c["lblStatus"].Text       = "Deletando..."
+    $c["lblStatus"].Text       = "Movendo para Lixeira..."
 
     # Hashtable sincronizada: C# thread escreve, timer PS le
     $sync = [System.Collections.Hashtable]::Synchronized(@{
@@ -574,15 +711,17 @@ $c["btnDelete"].Add_Click({
             $app.items                  = @()
 
             if ($err -eq 0) {
-                $c["lblCount"].Text           = "$del itens deletados"
-                $c["lblBreakdown"].Text       = "Pasta limpa!"
+                $c["lblCount"].Text           = "$del itens na Lixeira"
+                $c["lblSize"].Text            = ""
+                $c["lblBreakdown"].Text       = "Pasta limpa! Restaure pela Lixeira se necessario."
                 $c["lblBreakdown"].Foreground = Get-Brush "#7AB898"
-                $c["lblStatus"].Text          = "$del itens deletados com sucesso."
+                $c["lblStatus"].Text          = "$del itens movidos para a Lixeira."
             } else {
-                $c["lblCount"].Text           = "$del deletados  $err erros"
-                $c["lblBreakdown"].Text       = "Alguns itens nao puderam ser deletados (permissao negada?)."
+                $c["lblCount"].Text           = "$del na Lixeira  $([char]0x00B7)  $err erros"
+                $c["lblSize"].Text            = ""
+                $c["lblBreakdown"].Text       = "Alguns itens nao puderam ser movidos (permissao negada?)."
                 $c["lblBreakdown"].Foreground = Get-Brush "#C4907A"
-                $c["lblStatus"].Text          = "$del deletados, $err erros. Verifique permissoes."
+                $c["lblStatus"].Text          = "$del movidos, $err erros. Verifique permissoes."
             }
         }
     }.GetNewClosure()
