@@ -468,7 +468,7 @@ public class MacJunkDeleter {
       </Grid.ColumnDefinitions>
       <Button x:Name="btnSelect" Style="{StaticResource SBtn}" Grid.Column="0" Margin="0,0,8,0">
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <TextBlock Text="&#x1F4C1;" FontFamily="Segoe UI Emoji" FontSize="14"
+          <TextBlock x:Name="lblSelectIco" Text="&#x1F4C1;" FontFamily="Segoe UI Emoji" FontSize="14"
                      VerticalAlignment="Center" Margin="0,0,7,0"/>
           <TextBlock Text="Selecionar Pasta" VerticalAlignment="Center"/>
         </StackPanel>
@@ -492,7 +492,7 @@ public class MacJunkDeleter {
             <Button x:Name="btnHistory" Style="{StaticResource IconBtn}"
                     IsEnabled="False" ToolTip="Pastas recentes">
               <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                <TextBlock Text="&#x1F550;" FontFamily="Segoe UI Emoji" FontSize="12"
                            Foreground="#555" VerticalAlignment="Center" Margin="0,0,4,0"/>
                 <TextBlock Text="&#x25BE;" FontSize="10" Foreground="#555"
                            VerticalAlignment="Center"/>
@@ -530,7 +530,7 @@ public class MacJunkDeleter {
       <Button x:Name="btnAdvanced" Grid.Column="1" Style="{StaticResource SBtn}"
               FontSize="12" Padding="10,7" VerticalAlignment="Center">
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+          <TextBlock Text="&#x2699;" FontFamily="Segoe UI Emoji" FontSize="13"
                      VerticalAlignment="Center" Margin="0,0,7,0"/>
           <TextBlock x:Name="lblAdvancedTxt"
                      Text="Op&#xE7;&#xF5;es Avan&#xE7;adas  &#x25BE;"
@@ -649,15 +649,15 @@ public class MacJunkDeleter {
           <Button x:Name="btnToggle" Style="{StaticResource SBtn}" Visibility="Collapsed"
                   Margin="0,0,8,0" FontSize="13" Padding="12,8">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <TextBlock x:Name="lblToggleIco" Text="&#xE76C;" FontFamily="Segoe MDL2 Assets"
-                         FontSize="11" VerticalAlignment="Center" Margin="0,0,7,0"/>
+              <TextBlock x:Name="lblToggleIco" Text="&#x25BC;"
+                         FontSize="9" VerticalAlignment="Center" Margin="0,0,7,0"/>
               <TextBlock x:Name="lblToggleTxt" Text="Ver detalhes" VerticalAlignment="Center"/>
             </StackPanel>
           </Button>
           <Button x:Name="btnSaveLog" Style="{StaticResource SBtn}" Visibility="Collapsed"
                   Margin="0,0,8,0" FontSize="13" Padding="12,8">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+              <TextBlock Text="&#x1F4BE;" FontFamily="Segoe UI Emoji" FontSize="13"
                          VerticalAlignment="Center" Margin="0,0,7,0"/>
               <TextBlock Text="Salvar log" VerticalAlignment="Center"/>
             </StackPanel>
@@ -665,7 +665,7 @@ public class MacJunkDeleter {
           <Button x:Name="btnOpenRecycleBin" Style="{StaticResource SBtn}" Visibility="Collapsed"
                   FontSize="13" Padding="12,8">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+              <TextBlock Text="&#x1F5D1;" FontFamily="Segoe UI Emoji" FontSize="13"
                          VerticalAlignment="Center" Margin="0,0,7,0"/>
               <TextBlock Text="Abrir Lixeira" VerticalAlignment="Center"/>
             </StackPanel>
@@ -707,7 +707,7 @@ public class MacJunkDeleter {
       </Grid.ColumnDefinitions>
       <Button x:Name="btnScan" Style="{StaticResource SBtn}" Grid.Column="0" IsEnabled="False">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-          <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+          <TextBlock Text="&#x1F50D;" FontFamily="Segoe UI Emoji" FontSize="14"
                      VerticalAlignment="Center" Margin="0,0,8,0"/>
           <TextBlock Text="Escanear" VerticalAlignment="Center"/>
         </StackPanel>
@@ -716,14 +716,14 @@ public class MacJunkDeleter {
       <Grid Grid.Column="2">
         <Button x:Name="btnDelete" Style="{StaticResource PBtn}" IsEnabled="False" Visibility="Visible">
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+            <TextBlock Text="&#x1F5D1;" FontFamily="Segoe UI Emoji" FontSize="14"
                        VerticalAlignment="Center" Margin="0,0,8,0"/>
             <TextBlock Text="Mover para Lixeira" VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
         <Button x:Name="btnCancel" Style="{StaticResource CBtn}" Visibility="Collapsed">
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+            <TextBlock Text="&#x2715;" FontSize="14"
                        VerticalAlignment="Center" Margin="0,0,8,0"/>
             <TextBlock Text="Cancelar" VerticalAlignment="Center"/>
           </StackPanel>
@@ -765,7 +765,7 @@ $window = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader
 
 $c = @{}
 "btnSelect","pathBorder","lblPath","lblCount","lblCountLabel","lblSize","spBreakdown",
-"lblAdvancedTxt","lblToggleTxt","lblToggleIco",
+"lblSelectIco","lblAdvancedTxt","lblToggleTxt","lblToggleIco",
 "btnToggle","btnSaveLog","btnOpenRecycleBin","btnAdvanced","pnlAdvanced","pnlDropHint","pnlResultsCard","pnlDetails","lstFiles",
 "btnHistory","popHistory","lstHistory",
 "pbMain","lblProgTxt","lblProgPct","btnScan","btnDelete","btnCancel","lblStatus",
@@ -1106,7 +1106,7 @@ $closeDetails = {
     if ($app.detailsOpen) {
         $c["pnlDetails"].Visibility = "Collapsed"
         $c["lblToggleTxt"].Text     = "Ver detalhes"
-        $c["lblToggleIco"].Text     = [char]0xE76C
+        $c["lblToggleIco"].Text     = [char]0x25BC
         $app.detailsOpen            = $false
     }
 }.GetNewClosure()
@@ -1206,6 +1206,10 @@ $c["lstHistory"].Add_SelectionChanged({
         & $doScan
     }
 })
+
+# Hover 📁 → 📂 no botao de selecionar pasta
+$c["btnSelect"].Add_MouseEnter({ $c["lblSelectIco"].Text = [System.Char]::ConvertFromUtf32(0x1F4C2) })
+$c["btnSelect"].Add_MouseLeave({ $c["lblSelectIco"].Text = [System.Char]::ConvertFromUtf32(0x1F4C1) })
 
 # Selecionar pasta — picker moderno + salva registry + auto-scan
 $c["btnSelect"].Add_Click({
@@ -1313,11 +1317,11 @@ $c["btnToggle"].Add_Click({
     if ($app.detailsOpen) {
         $c["pnlDetails"].Visibility = "Visible"
         $c["lblToggleTxt"].Text     = "Ocultar detalhes"
-        $c["lblToggleIco"].Text     = [char]0xE76D
+        $c["lblToggleIco"].Text     = [char]0x25B2
     } else {
         $c["pnlDetails"].Visibility = "Collapsed"
         $c["lblToggleTxt"].Text     = "Ver detalhes"
-        $c["lblToggleIco"].Text     = [char]0xE76C
+        $c["lblToggleIco"].Text     = [char]0x25BC
     }
     & $syncWindowHeight
 })
