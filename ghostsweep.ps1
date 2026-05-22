@@ -425,28 +425,11 @@ public class MacJunkDeleter {
 
     <!-- Titulo + Logo -->
     <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
-      <!-- Logo: fantasma meio-termo — curva pontiaguda + lados retos + base agressiva -->
-      <Canvas Width="52" Height="28" VerticalAlignment="Center" Margin="0,0,12,0">
-        <!-- Corpo: arco gotico (mais pontiagudo que cupula, menos duro que triangulo),
-             lados verticais retos, base com dentes em V -->
-        <Path Fill="#FDEABF"
-              Data="M 11,0 C 16,0 22,5 22,8 L 22,24 L 19,19 L 17,24 L 13,19 L 11,24 L 7,19 L 5,24 L 1,24 L 1,8 C 1,5 6,0 11,0 Z"/>
-        <!-- Olhos: elipses (arredondadas, como no original) -->
-        <Ellipse Canvas.Left="5.5"  Canvas.Top="10" Width="4.5" Height="5.5" Fill="#0d0d0d"/>
-        <Ellipse Canvas.Left="13"   Canvas.Top="10" Width="4.5" Height="5.5" Fill="#0d0d0d"/>
-        <!-- Pixels se dispersando para a direita (sweep effect) -->
-        <Rectangle Canvas.Left="26" Canvas.Top="5"  Width="3"   Height="3"   Fill="#FDEABF" Opacity="0.80"/>
-        <Rectangle Canvas.Left="30" Canvas.Top="12" Width="2.5" Height="2.5" Fill="#FDEABF" Opacity="0.65"/>
-        <Rectangle Canvas.Left="27" Canvas.Top="18" Width="2"   Height="2"   Fill="#FDEABF" Opacity="0.55"/>
-        <Rectangle Canvas.Left="34" Canvas.Top="7"  Width="2"   Height="2"   Fill="#FDEABF" Opacity="0.50"/>
-        <Rectangle Canvas.Left="35" Canvas.Top="16" Width="1.5" Height="1.5" Fill="#FDEABF" Opacity="0.40"/>
-        <Rectangle Canvas.Left="38" Canvas.Top="21" Width="1.5" Height="1.5" Fill="#FDEABF" Opacity="0.35"/>
-        <Rectangle Canvas.Left="39" Canvas.Top="10" Width="1"   Height="1"   Fill="#FDEABF" Opacity="0.28"/>
-        <Rectangle Canvas.Left="42" Canvas.Top="17" Width="1"   Height="1"   Fill="#FDEABF" Opacity="0.20"/>
-        <Rectangle Canvas.Left="44" Canvas.Top="5"  Width="1"   Height="1"   Fill="#FDEABF" Opacity="0.14"/>
-        <Rectangle Canvas.Left="46" Canvas.Top="13" Width="1"   Height="1"   Fill="#FDEABF" Opacity="0.10"/>
-        <Rectangle Canvas.Left="48" Canvas.Top="22" Width="1"   Height="1"   Fill="#FDEABF" Opacity="0.07"/>
-      </Canvas>
+      <!-- Logo pixel art — carregado via PS do assets/Icone_256x256.png -->
+      <!-- NearestNeighbor preserva pixels nitidos sem blur -->
+      <Image x:Name="imgLogo" Height="32" Width="32"
+             VerticalAlignment="Center" Margin="0,0,10,0"
+             RenderOptions.BitmapScalingMode="NearestNeighbor"/>
       <TextBlock Text="GhostSweep" FontSize="21" FontWeight="Bold"
                  Foreground="#e8e8e8" VerticalAlignment="Center"/>
     </StackPanel>
@@ -707,6 +690,7 @@ $window = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader
 
 $c = @{}
 "btnSelect","pathBorder","lblPath","lblCount","lblCountLabel","lblSize","spBreakdown",
+"imgLogo",
 "btnToggle","btnSaveLog","btnOpenRecycleBin","btnAdvanced","pnlAdvanced","pnlDropHint","pnlResultsCard","pnlDetails","lstFiles",
 "btnHistory","popHistory","lstHistory",
 "pbMain","lblProgTxt","lblProgPct","btnScan","btnDelete","btnCancel","lblStatus",
@@ -1472,15 +1456,26 @@ if ($lastF -and (Test-Path -LiteralPath $lastF -PathType Container)) {
     $c["lblStatus"].Text     = "Ultima pasta carregada. Clique em Escanear ou arraste uma nova."
 }
 
-# Icone da janela (titulo + taskbar) — carrega assets/Icone_256x256.png se disponivel
+# Icone e logo pixel art — carrega assets/Icone_256x256.png se disponivel ao lado do script
 $scriptDir = if ($MyInvocation.MyCommand.Path) { Split-Path -Parent $MyInvocation.MyCommand.Path } else { $null }
 if ($scriptDir) {
     $iconPath = Join-Path $scriptDir "assets\Icone_256x256.png"
     if (Test-Path $iconPath) {
+        $absUri = [System.Uri]::new($iconPath, [System.UriKind]::Absolute)
+        # Icone da janela (barra de titulo + taskbar)
         try {
-            $window.Icon = [System.Windows.Media.Imaging.BitmapFrame]::Create(
-                [System.Uri]::new($iconPath, [System.UriKind]::Absolute)
-            )
+            $window.Icon = [System.Windows.Media.Imaging.BitmapFrame]::Create($absUri)
+        } catch {}
+        # Logo no header do app — NearestNeighbor preserva pixels nitidos do pixel art
+        try {
+            $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+            $bmp.BeginInit()
+            $bmp.UriSource      = $absUri
+            $bmp.DecodePixelHeight = 64   # decodifica em 64px — renderiza em 32 WPF DIPs (2x nitido)
+            $bmp.CacheOption    = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+            $bmp.EndInit()
+            $bmp.Freeze()
+            $c["imgLogo"].Source = $bmp
         } catch {}
     }
 }
