@@ -407,6 +407,37 @@ public class MacJunkDeleter {
       </Setter>
     </Style>
 
+    <!-- Botao icone flat (historico de pastas, contextos sem borda) -->
+    <Style x:Key="IconBtn" TargetType="Button">
+      <Setter Property="Background"   Value="Transparent"/>
+      <Setter Property="BorderBrush"  Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Cursor"       Value="Hand"/>
+      <Setter Property="Padding"      Value="7,5"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" Background="Transparent" CornerRadius="5"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#252525"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#303030"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.35"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
   </Window.Resources>
 
   <Grid Margin="26,22,26,22">
@@ -438,7 +469,6 @@ public class MacJunkDeleter {
     <Grid Grid.Row="1" Margin="0,0,0,14">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto"/>
-        <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
       <Button x:Name="btnSelect" Style="{StaticResource SBtn}" Grid.Column="0" Margin="0,0,8,0">
@@ -448,29 +478,42 @@ public class MacJunkDeleter {
           <TextBlock Text="Selecionar Pasta" VerticalAlignment="Center"/>
         </StackPanel>
       </Button>
-      <!-- Historico de pastas recentes -->
-      <Grid Grid.Column="1" Margin="0,0,10,0">
-        <Button x:Name="btnHistory" Content="&#x25BE;" Style="{StaticResource SBtn}"
-                FontSize="13" Padding="10,9" IsEnabled="False"
-                ToolTip="Pastas recentes"/>
-        <Popup x:Name="popHistory" Placement="Bottom" StaysOpen="False"
-               PlacementTarget="{Binding ElementName=btnHistory}"
-               AllowsTransparency="True">
-          <Border Background="#1a1a1a" BorderBrush="#333" BorderThickness="1"
-                  CornerRadius="7" Padding="4" MinWidth="320">
-            <ListBox x:Name="lstHistory" Background="Transparent" BorderThickness="0"
-                     Foreground="#ccc" FontSize="12" Padding="0" MaxHeight="160"/>
-          </Border>
-        </Popup>
-      </Grid>
-      <Border x:Name="pathBorder" Grid.Column="2" Background="#161616" CornerRadius="7"
-              BorderBrush="#2a2a2a" BorderThickness="1" Padding="12,10">
-        <TextBox x:Name="lblPath" Text="Nenhuma pasta selecionada"
-                 Foreground="#555" VerticalAlignment="Center"
-                 Background="Transparent" BorderThickness="0"
-                 CaretBrush="#FDEABF" SelectionBrush="#5a4000"
-                 FocusVisualStyle="{x:Null}" Padding="0"
-                 ToolTip="Digite um caminho e pressione Enter"/>
+      <!-- Path + botao de historico integrado no final do campo -->
+      <Border x:Name="pathBorder" Grid.Column="1" Background="#161616" CornerRadius="7"
+              BorderBrush="#2a2a2a" BorderThickness="1" Padding="12,6,4,6">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <TextBox x:Name="lblPath" Grid.Column="0" Text="Nenhuma pasta selecionada"
+                   Foreground="#555" VerticalAlignment="Center"
+                   Background="Transparent" BorderThickness="0"
+                   CaretBrush="#FDEABF" SelectionBrush="#5a4000"
+                   FocusVisualStyle="{x:Null}" Padding="0,3"
+                   ToolTip="Digite um caminho e pressione Enter"/>
+          <!-- Botao historico — fim do campo, icone clock + seta -->
+          <Grid Grid.Column="1" Margin="4,0,0,0">
+            <Button x:Name="btnHistory" Style="{StaticResource IconBtn}"
+                    IsEnabled="False" ToolTip="Pastas recentes">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                           Foreground="#555" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="&#x25BE;" FontSize="10" Foreground="#555"
+                           VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Popup x:Name="popHistory" Placement="Bottom" StaysOpen="False"
+                   PlacementTarget="{Binding ElementName=btnHistory}"
+                   AllowsTransparency="True">
+              <Border Background="#1a1a1a" BorderBrush="#333" BorderThickness="1"
+                      CornerRadius="7" Padding="4" MinWidth="320">
+                <ListBox x:Name="lstHistory" Background="Transparent" BorderThickness="0"
+                         Foreground="#ccc" FontSize="12" Padding="0" MaxHeight="160"/>
+              </Border>
+            </Popup>
+          </Grid>
+        </Grid>
       </Border>
     </Grid>
 
@@ -488,10 +531,16 @@ public class MacJunkDeleter {
                    FontSize="12" Foreground="#444" Margin="19,3,0,0"
                    TextWrapping="Wrap"/>
       </StackPanel>
-      <Button x:Name="btnAdvanced" Grid.Column="1"
-              Content="Op&#xE7;&#xF5;es Avan&#xE7;adas  &#x25BE;"
-              Style="{StaticResource SBtn}" FontSize="12" Padding="10,7"
-              VerticalAlignment="Center"/>
+      <Button x:Name="btnAdvanced" Grid.Column="1" Style="{StaticResource SBtn}"
+              FontSize="12" Padding="10,7" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                     VerticalAlignment="Center" Margin="0,0,7,0"/>
+          <TextBlock x:Name="lblAdvancedTxt"
+                     Text="Op&#xE7;&#xF5;es Avan&#xE7;adas  &#x25BE;"
+                     VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
     </Grid>
 
     <!-- Painel de opcoes avancadas (colapsavel) — linhas zebradas -->
@@ -604,12 +653,22 @@ public class MacJunkDeleter {
           <Button x:Name="btnToggle" Content="ver detalhes"
                   Style="{StaticResource SBtn}" Visibility="Collapsed"
                   Margin="0,0,8,0" FontSize="13" Padding="12,8"/>
-          <Button x:Name="btnSaveLog" Content="Salvar log"
-                  Style="{StaticResource SBtn}" Visibility="Collapsed"
-                  Margin="0,0,8,0" FontSize="13" Padding="12,8"/>
-          <Button x:Name="btnOpenRecycleBin" Content="Abrir Lixeira"
-                  Style="{StaticResource SBtn}" Visibility="Collapsed"
-                  FontSize="13" Padding="12,8"/>
+          <Button x:Name="btnSaveLog" Style="{StaticResource SBtn}" Visibility="Collapsed"
+                  Margin="0,0,8,0" FontSize="13" Padding="12,8">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                         VerticalAlignment="Center" Margin="0,0,7,0"/>
+              <TextBlock Text="Salvar log" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+          <Button x:Name="btnOpenRecycleBin" Style="{StaticResource SBtn}" Visibility="Collapsed"
+                  FontSize="13" Padding="12,8">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="13"
+                         VerticalAlignment="Center" Margin="0,0,7,0"/>
+              <TextBlock Text="Abrir Lixeira" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
         </WrapPanel>
       </StackPanel>
     </Border>
@@ -645,14 +704,29 @@ public class MacJunkDeleter {
         <ColumnDefinition Width="12"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
-      <Button x:Name="btnScan" Content="Escanear" Style="{StaticResource SBtn}"
-              Grid.Column="0" IsEnabled="False"/>
+      <Button x:Name="btnScan" Style="{StaticResource SBtn}" Grid.Column="0" IsEnabled="False">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                     VerticalAlignment="Center" Margin="0,0,8,0"/>
+          <TextBlock Text="Escanear" VerticalAlignment="Center"/>
+        </StackPanel>
+      </Button>
       <!-- btnDelete e btnCancel compartilham col 2; so um visivel por vez -->
       <Grid Grid.Column="2">
-        <Button x:Name="btnDelete" Content="Mover para Lixeira" Style="{StaticResource PBtn}"
-                IsEnabled="False" Visibility="Visible"/>
-        <Button x:Name="btnCancel" Content="Cancelar" Style="{StaticResource CBtn}"
-                Visibility="Collapsed"/>
+        <Button x:Name="btnDelete" Style="{StaticResource PBtn}" IsEnabled="False" Visibility="Visible">
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBlock Text="Mover para Lixeira" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+        <Button x:Name="btnCancel" Style="{StaticResource CBtn}" Visibility="Collapsed">
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBlock Text="Cancelar" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
       </Grid>
     </Grid>
 
@@ -691,6 +765,7 @@ $window = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader
 $c = @{}
 "btnSelect","pathBorder","lblPath","lblCount","lblCountLabel","lblSize","spBreakdown",
 "imgLogo",
+"lblAdvancedTxt",
 "btnToggle","btnSaveLog","btnOpenRecycleBin","btnAdvanced","pnlAdvanced","pnlDropHint","pnlResultsCard","pnlDetails","lstFiles",
 "btnHistory","popHistory","lstHistory",
 "pbMain","lblProgTxt","lblProgPct","btnScan","btnDelete","btnCancel","lblStatus",
@@ -1067,10 +1142,10 @@ $updateHistoryBtn = {
 $c["btnAdvanced"].Add_Click({
     if ($c["pnlAdvanced"].Visibility -eq "Visible") {
         $c["pnlAdvanced"].Visibility = "Collapsed"
-        $c["btnAdvanced"].Content    = "Op$([char]0xE7)$([char]0xF5)es Avan$([char]0xE7)adas  $([char]0x25BE)"
+        $c["lblAdvancedTxt"].Text    = "Op$([char]0xE7)$([char]0xF5)es Avan$([char]0xE7)adas  $([char]0x25BE)"
     } else {
         $c["pnlAdvanced"].Visibility = "Visible"
-        $c["btnAdvanced"].Content    = "Op$([char]0xE7)$([char]0xF5)es Avan$([char]0xE7)adas  $([char]0x25B4)"
+        $c["lblAdvancedTxt"].Text    = "Op$([char]0xE7)$([char]0xF5)es Avan$([char]0xE7)adas  $([char]0x25B4)"
     }
     & $syncWindowHeight
 })
@@ -1460,7 +1535,7 @@ if ($lastF -and (Test-Path -LiteralPath $lastF -PathType Container)) {
 $scriptDir = if ($MyInvocation.MyCommand.Path) { Split-Path -Parent $MyInvocation.MyCommand.Path } else { $null }
 if ($scriptDir) {
     $iconPath = Join-Path $scriptDir "assets\Icone_256x256.png"
-    if (Test-Path $iconPath) {
+    if (Test-Path -LiteralPath $iconPath) {
         $absUri = [System.Uri]::new($iconPath, [System.UriKind]::Absolute)
         # Icone da janela (barra de titulo + taskbar)
         try {
