@@ -456,11 +456,6 @@ public class MacJunkDeleter {
 
     <!-- Titulo + Logo -->
     <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
-      <!-- Logo pixel art — carregado via PS do assets/Icone_256x256.png -->
-      <!-- NearestNeighbor preserva pixels nitidos sem blur -->
-      <Image x:Name="imgLogo" Height="32" Width="32"
-             VerticalAlignment="Center" Margin="0,0,10,0"
-             RenderOptions.BitmapScalingMode="NearestNeighbor"/>
       <TextBlock Text="GhostSweep" FontSize="21" FontWeight="Bold"
                  Foreground="#e8e8e8" VerticalAlignment="Center"/>
     </StackPanel>
@@ -770,7 +765,6 @@ $window = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader
 
 $c = @{}
 "btnSelect","pathBorder","lblPath","lblCount","lblCountLabel","lblSize","spBreakdown",
-"imgLogo",
 "lblAdvancedTxt","lblToggleTxt","lblToggleIco",
 "btnToggle","btnSaveLog","btnOpenRecycleBin","btnAdvanced","pnlAdvanced","pnlDropHint","pnlResultsCard","pnlDetails","lstFiles",
 "btnHistory","popHistory","lstHistory",
@@ -1540,29 +1534,6 @@ if ($lastF -and (Test-Path -LiteralPath $lastF -PathType Container)) {
     $c["lblStatus"].Text     = "Ultima pasta carregada. Clique em Escanear ou arraste uma nova."
 }
 
-# Icone e logo pixel art — carrega assets/Icone_256x256.png se disponivel ao lado do script
-$scriptDir = if ($MyInvocation.MyCommand.Path) { Split-Path -Parent $MyInvocation.MyCommand.Path } else { $null }
-if ($scriptDir) {
-    $iconPath = Join-Path $scriptDir "assets\Icone_256x256.png"
-    if (Test-Path -LiteralPath $iconPath) {
-        $absUri = [System.Uri]::new($iconPath, [System.UriKind]::Absolute)
-        # Icone da janela (barra de titulo + taskbar)
-        try {
-            $window.Icon = [System.Windows.Media.Imaging.BitmapFrame]::Create($absUri)
-        } catch {}
-        # Logo no header do app — NearestNeighbor preserva pixels nitidos do pixel art
-        try {
-            $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-            $bmp.BeginInit()
-            $bmp.UriSource      = $absUri
-            $bmp.DecodePixelHeight = 64   # decodifica em 64px — renderiza em 32 WPF DIPs (2x nitido)
-            $bmp.CacheOption    = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-            $bmp.EndInit()
-            $bmp.Freeze()
-            $c["imgLogo"].Source = $bmp
-        } catch {}
-    }
-}
 
 # Escala largura pela resolucao da tela: min(max(560, sw*0.32), 720)
 # SystemParameters usa WPF DIPs — ja ciente de DPI, funciona em qualquer escala
