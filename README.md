@@ -1,5 +1,11 @@
 # GhostSweep
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0-orange.svg)](https://github.com/bguimaia/ghostsweep/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows-0078D4?logo=windows&logoColor=white)]()
+[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)]()
+[![No Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)]()
+
 **Remove macOS ghost files from any Windows folder — no installs, no dependencies, no admin rights.**
 
 `.DS_Store` · `._*` resource forks · `__MACOSX` · `.Spotlight-V100` · `.Trashes`
@@ -20,6 +26,7 @@ GhostSweep is a single PowerShell script that opens a GUI window, scans for thos
 - **Safe by default** — deleted files go to the Recycle Bin. Undo anytime with Ctrl+Z in Explorer.
 - **Granular control** — enable or disable each file type before scanning. Run only what you need.
 - **Keyboard-first** — full workflow without touching the mouse. Scan → review → delete → done.
+- **Folder history** — remembers your last 5 folders, persisted across sessions.
 - **Audit trail** — export a timestamped log with breakdown by type and full path list.
 - **Adaptive UI** — window scales to your screen resolution. Works from 1280px up to 4K.
 
@@ -90,14 +97,14 @@ Open PowerShell, paste, press Enter. The window opens immediately.
 
 Click *Advanced Options* to expand the type filter panel. Each file type can be enabled or disabled independently:
 
-| Option            | Default | What it does                                         |
-| ----------------- | ------- | ---------------------------------------------------- |
-| `.DS_Store`       | ✅ On   | macOS folder metadata files                          |
-| `._* (forks)`     | ✅ On   | Resource fork files (prefixed with `._`)             |
-| `__MACOSX`        | ✅ On   | Ghost folder left by macOS zip extraction            |
-| `.Spotlight-V100` | ✅ On   | Spotlight search index on external drives            |
-| `.Trashes`        | ✅ On   | macOS trash folder on external drives                |
-| Include subfolders| ✅ On   | Recursively scan all nested folders                  |
+| Option              | Default | What it does                                         |
+| ------------------- | ------- | ---------------------------------------------------- |
+| `.DS_Store`         | ✅ On   | macOS folder metadata files                          |
+| `._* (forks)`       | ✅ On   | Resource fork files (prefixed with `._`)             |
+| `__MACOSX`          | ✅ On   | Ghost folder left by macOS zip extraction            |
+| `.Spotlight-V100`   | ✅ On   | Spotlight search index on external drives            |
+| `.Trashes`          | ✅ On   | macOS trash folder on external drives                |
+| Include subfolders  | ✅ On   | Recursively scan all nested folders                  |
 
 ---
 
@@ -124,8 +131,8 @@ GhostSweep v1.0 — Log de exclusao
 ==========================================
 Inicio:  14/06/2025 09:32:11
 Fim:     14/06/2025 09:32:14
-Pasta:   C:\Volumes\Drive\Projeto
-Total:   48 itens deletados
+Pasta:   C:\Volumes\Drive\Project
+Total:   48 items deleted
 
 RESUMO POR TIPO
   .DS_Store         34
@@ -133,10 +140,16 @@ RESUMO POR TIPO
   __MACOSX           2
 
 ITENS DELETADOS
-14/06/2025 09:32:11   C:\Volumes\Drive\Projeto\.DS_Store
-14/06/2025 09:32:11   C:\Volumes\Drive\Projeto\Assets\.DS_Store
+14/06/2025 09:32:11   C:\Volumes\Drive\Project\.DS_Store
+14/06/2025 09:32:11   C:\Volumes\Drive\Project\Assets\.DS_Store
 ...
 ```
+
+---
+
+## Contributing
+
+Contributions are welcome. Feel free to open issues, suggest features, or submit pull requests.
 
 ---
 
@@ -150,7 +163,7 @@ ITENS DELETADOS
 
 ## Made by
 
-Built by **Bruno Maia** and **Cláudio**.
+Built by **Bruno Maia** and **Claude**.
 
 - [github.com/bguimaia](https://github.com/bguimaia)
 
@@ -158,12 +171,18 @@ Built by **Bruno Maia** and **Cláudio**.
 
 ## License
 
-MIT
+[MIT](LICENSE)
 
 ---
 ---
 
 # GhostSweep
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0-orange.svg)](https://github.com/bguimaia/ghostsweep/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows-0078D4?logo=windows&logoColor=white)]()
+[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)]()
+[![No Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)]()
 
 **Remove arquivos fantasma do macOS de qualquer pasta no Windows — sem instalar nada, sem dependências, sem permissão de administrador.**
 
@@ -185,7 +204,7 @@ GhostSweep é um único script PowerShell que abre uma janela, escaneia esses ar
 - **Seguro por padrão** — arquivos deletados vão para a Lixeira. Desfaça com Ctrl+Z no Explorer.
 - **Controle granular** — ative ou desative cada tipo de arquivo antes de escanear.
 - **Workflow por teclado** — fluxo completo sem precisar do mouse.
-- **Histórico de pastas** — lembra as últimas 5 pastas usadas.
+- **Histórico de pastas** — lembra as últimas 5 pastas usadas, persistido entre sessões.
 - **Trilha de auditoria** — exporte um log com timestamps, resumo por tipo e lista completa de caminhos.
 - **Interface adaptável** — janela escala com a resolução da tela. Funciona de 1280px até 4K.
 
@@ -256,14 +275,14 @@ Abra o PowerShell, cole e pressione Enter. A janela abre imediatamente.
 
 Clique em *Opções Avançadas* para expandir o painel de filtro por tipo. Cada tipo pode ser ativado ou desativado independentemente:
 
-| Opção             | Padrão  | O que faz                                             |
-| ----------------- | ------- | ----------------------------------------------------- |
-| `.DS_Store`       | ✅ Ativo | Arquivos de metadados de pasta do macOS               |
-| `._* (forks)`     | ✅ Ativo | Resource forks (prefixados com `._`)                  |
-| `__MACOSX`        | ✅ Ativo | Pasta fantasma criada ao descompactar ZIPs no Mac     |
-| `.Spotlight-V100` | ✅ Ativo | Índice de busca do Spotlight em drives externos       |
-| `.Trashes`        | ✅ Ativo | Lixeira do macOS em drives externos                   |
-| Incluir subpastas | ✅ Ativo | Escanear recursivamente todas as subpastas            |
+| Opção               | Padrão  | O que faz                                             |
+| ------------------- | ------- | ----------------------------------------------------- |
+| `.DS_Store`         | ✅ Ativo | Arquivos de metadados de pasta do macOS               |
+| `._* (forks)`       | ✅ Ativo | Resource forks (prefixados com `._`)                  |
+| `__MACOSX`          | ✅ Ativo | Pasta fantasma criada ao descompactar ZIPs no Mac     |
+| `.Spotlight-V100`   | ✅ Ativo | Índice de busca do Spotlight em drives externos       |
+| `.Trashes`          | ✅ Ativo | Lixeira do macOS em drives externos                   |
+| Incluir subpastas   | ✅ Ativo | Escanear recursivamente todas as subpastas            |
 
 ---
 
@@ -281,7 +300,7 @@ Clique em *Opções Avançadas* para expandir o painel de filtro por tipo. Cada 
 
 ## Arquivo de log
 
-Após a deleção, clique em *Salvar log* para exportar um `.txt`. O nome do arquivo inclui o timestamp de quando a deleção iniciou (ex: `ghostsweep-2025-06-14_09-32-11.txt`).
+Após a deleção, clique em *Salvar log* para exportar um `.txt`. O nome inclui o timestamp de quando a deleção iniciou (ex: `ghostsweep-2025-06-14_09-32-11.txt`).
 
 Formato do log:
 
@@ -306,6 +325,12 @@ ITENS DELETADOS
 
 ---
 
+## Contribuindo
+
+Contribuições são bem-vindas. Abra uma issue, sugira funcionalidades ou envie um pull request.
+
+---
+
 ## Requisitos
 
 - Windows 8.1 ou superior
@@ -316,7 +341,7 @@ ITENS DELETADOS
 
 ## Feito por
 
-Desenvolvido por **Bruno Maia** e **Cláudio**.
+Desenvolvido por **Bruno Maia** e **Claude**.
 
 - [github.com/bguimaia](https://github.com/bguimaia)
 
@@ -324,4 +349,4 @@ Desenvolvido por **Bruno Maia** e **Cláudio**.
 
 ## Licença
 
-MIT
+[MIT](LICENSE)
