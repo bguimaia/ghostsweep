@@ -152,8 +152,8 @@ public class MacJunkDeleter {
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Mac Junk Cleaner"
-        Height="450" Width="520"
-        MinHeight="450" MinWidth="520"
+        Height="500" Width="520"
+        MinHeight="500" MinWidth="520"
         WindowStartupLocation="CenterScreen"
         AllowDrop="True"
         FontFamily="Inter, Segoe UI"
@@ -370,13 +370,14 @@ public class MacJunkDeleter {
             Padding="18,16" Margin="0,0,0,12"
             Visibility="Collapsed">
       <StackPanel>
-        <TextBlock x:Name="lblCount"     Text="--"  FontSize="28" FontWeight="Bold" Foreground="#FDEABF"/>
-        <TextBlock x:Name="lblSize"      Text=""    FontSize="12" Foreground="#888" Margin="0,2,0,0"/>
-        <TextBlock x:Name="lblBreakdown" Text=""
-                   Foreground="#888" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"/>
+        <TextBlock x:Name="lblCount"      Text="--" FontSize="36" FontWeight="Bold" Foreground="#FDEABF"/>
+        <TextBlock x:Name="lblCountLabel" Text=""   FontSize="13" Foreground="#888" Margin="0,2,0,0"/>
+        <TextBlock x:Name="lblSize"       Text=""   FontSize="14" Foreground="#FDEABF" Margin="0,8,0,0"/>
+        <TextBlock x:Name="lblBreakdown"  Text=""
+                   Foreground="#888" FontSize="13" Margin="0,4,0,0" TextWrapping="Wrap"/>
         <Button x:Name="btnToggle" Content="ver detalhes"
                 Style="{StaticResource SBtn}" Visibility="Collapsed"
-                HorizontalAlignment="Left" Margin="0,12,0,0" FontSize="11" Padding="10,6"/>
+                HorizontalAlignment="Left" Margin="0,14,0,0" FontSize="12" Padding="12,7"/>
       </StackPanel>
     </Border>
 
@@ -417,7 +418,7 @@ public class MacJunkDeleter {
 
     <!-- Status -->
     <TextBlock x:Name="lblStatus" Grid.Row="6" Text="Pronto."
-               Foreground="#555" FontSize="11" Margin="0,10,0,0"/>
+               Foreground="#555" FontSize="12" Margin="0,10,0,0"/>
   </Grid>
 </Window>
 "@
@@ -426,7 +427,7 @@ public class MacJunkDeleter {
 $window = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader $xaml))
 
 $c = @{}
-"btnSelect","lblPath","lblCount","lblBreakdown","lblSize",
+"btnSelect","lblPath","lblCount","lblCountLabel","lblBreakdown","lblSize",
 "btnToggle","pnlDropHint","pnlResultsCard","pnlDetails","lstFiles",
 "pbMain","lblProgTxt","lblProgPct","btnScan","btnDelete","lblStatus" | ForEach-Object {
     $c[$_] = $window.FindName($_)
@@ -493,6 +494,7 @@ $doScan = {
     $c["btnScan"].IsEnabled       = $false
     $c["btnDelete"].IsEnabled     = $false
     $c["lblCount"].Text           = "..."
+    $c["lblCountLabel"].Text      = ""
     $c["lblSize"].Text            = ""
     $c["lblBreakdown"].Text       = "Buscando arquivos macOS..."
     $c["lblBreakdown"].Foreground = Get-Brush "#888"
@@ -512,7 +514,8 @@ $doScan = {
     $app.items = $found
 
     if ($found.Count -eq 0) {
-        $c["lblCount"].Text           = "0 itens"
+        $c["lblCount"].Text           = "0"
+        $c["lblCountLabel"].Text      = "itens encontrados"
         $c["lblSize"].Text            = ""
         $c["lblBreakdown"].Text       = "Pasta limpa! Nenhum arquivo macOS encontrado."
         $c["lblBreakdown"].Foreground = Get-Brush "#7AB898"
@@ -536,13 +539,15 @@ $doScan = {
         if ($sp -gt 0) { $parts += ".Spotlight: $sp"  }
         if ($tr -gt 0) { $parts += ".Trashes: $tr"    }
 
-        $c["lblCount"].Text           = "$($found.Count) itens encontrados"
+        $numFmt = $found.Count.ToString("N0")
+        $c["lblCount"].Text           = $numFmt
+        $c["lblCountLabel"].Text      = "itens encontrados"
         $c["lblSize"].Text            = "$(Format-Size $totalBytes) para liberar"
         $c["lblBreakdown"].Text       = ($parts -join "  $([char]0x00B7)  ")
         $c["lblBreakdown"].Foreground = Get-Brush "#888"
         $c["btnToggle"].Visibility    = "Visible"
         $c["btnDelete"].IsEnabled     = $true
-        $c["lblStatus"].Text          = "Scan concluido. $($found.Count) itens prontos para mover para Lixeira."
+        $c["lblStatus"].Text          = "$numFmt itens prontos para mover para Lixeira."
 
         $found | ForEach-Object { $c["lstFiles"].Items.Add($_) | Out-Null }
     }
@@ -555,7 +560,7 @@ $closeDetails = {
         $c["pnlDetails"].Visibility = "Collapsed"
         $c["btnToggle"].Content     = "ver detalhes"
         $app.detailsOpen            = $false
-        $window.Height              = 450
+        $window.Height              = 500
     }
 }.GetNewClosure()
 
@@ -647,11 +652,11 @@ $c["btnToggle"].Add_Click({
     if ($app.detailsOpen) {
         $c["pnlDetails"].Visibility = "Visible"
         $c["btnToggle"].Content     = "ocultar detalhes"
-        $window.Height = 600
+        $window.Height = 710
     } else {
         $c["pnlDetails"].Visibility = "Collapsed"
         $c["btnToggle"].Content     = "ver detalhes"
-        $window.Height = 450
+        $window.Height = 500
     }
 })
 
@@ -707,21 +712,24 @@ $c["btnDelete"].Add_Click({
             $c["pnlDetails"].Visibility = "Collapsed"
             $c["btnToggle"].Visibility  = "Collapsed"
             $app.detailsOpen            = $false
-            $window.Height              = 450
+            $window.Height              = 500
             $app.items                  = @()
 
+            $delFmt = $del.ToString("N0")
             if ($err -eq 0) {
-                $c["lblCount"].Text           = "$del itens na Lixeira"
+                $c["lblCount"].Text           = $delFmt
+                $c["lblCountLabel"].Text      = "itens na Lixeira"
                 $c["lblSize"].Text            = ""
                 $c["lblBreakdown"].Text       = "Pasta limpa! Restaure pela Lixeira se necessario."
                 $c["lblBreakdown"].Foreground = Get-Brush "#7AB898"
-                $c["lblStatus"].Text          = "$del itens movidos para a Lixeira."
+                $c["lblStatus"].Text          = "$delFmt itens movidos para a Lixeira."
             } else {
-                $c["lblCount"].Text           = "$del na Lixeira  $([char]0x00B7)  $err erros"
+                $c["lblCount"].Text           = $delFmt
+                $c["lblCountLabel"].Text      = "movidos  $([char]0x00B7)  $err erros"
                 $c["lblSize"].Text            = ""
                 $c["lblBreakdown"].Text       = "Alguns itens nao puderam ser movidos (permissao negada?)."
                 $c["lblBreakdown"].Foreground = Get-Brush "#C4907A"
-                $c["lblStatus"].Text          = "$del movidos, $err erros. Verifique permissoes."
+                $c["lblStatus"].Text          = "$delFmt movidos, $err erros. Verifique permissoes."
             }
         }
     }.GetNewClosure()
