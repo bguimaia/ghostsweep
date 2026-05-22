@@ -1,6 +1,9 @@
 # GhostSweep v1.0 — Windows
 # Remove .DS_Store, ._* (resource forks), __MACOSX e outros arquivos fantasma do macOS
 # Requer: Windows PowerShell 5.1+ ou PowerShell 7+
+#
+# Feito por Bruno Maia & Claudio
+# https://github.com/bguimaia/ghostsweep
 
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Windows.Forms
 
