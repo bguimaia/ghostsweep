@@ -70,7 +70,7 @@ Open PowerShell, paste, press Enter. The window opens immediately.
 │                                                          │
 │  ████████████████░░░░  68%  33/48                        │
 │                                                          │
-│  [Scan]    [🗑 Delete All]    [💾 Save Log]              │
+│  [Scan]    [🗑 Move to Recycle Bin]    [💾 Save Log]     │
 │  Status: 33 items deleted · 15 remaining                 │
 ├──────────────────────────────────────────────────────────┤
 │  Enter  scan  ·  Del  delete  ·  Esc  cancel             │
@@ -83,7 +83,7 @@ Open PowerShell, paste, press Enter. The window opens immediately.
 2. **Configure** — toggle *Include subfolders* (on by default). Open *Advanced Options* to enable/disable specific file types.
 3. **Scan** — click *Scan* or press `Enter`. Results appear with a count per type.
 4. **Review** — click *Show details* to expand a scrollable list of every found path.
-5. **Delete** — click *Delete All* or press `Del`. A progress bar tracks deletion in real time.
+5. **Move to Recycle Bin** — click *Move to Recycle Bin* or press `Del`. A progress bar tracks deletion in real time.
 6. **Save the log** — after deletion, click *Save Log* to export a `.txt` audit file.
 
 ---
@@ -132,21 +132,24 @@ After a deletion, click *Save Log* to export a `.txt` file. The filename include
 Log format:
 
 ```
-GhostSweep v1.0 — Log de exclusao
-==========================================
+GhostSweep v1.0 — Log de limpeza
+============================================================
 Inicio:  14/06/2025 09:32:11
 Fim:     14/06/2025 09:32:14
 Pasta:   C:\Volumes\Drive\Project
-Total:   48 items deleted
+Total:   48 itens  (1.2 MB)
 
-RESUMO POR TIPO
-  .DS_Store         34
-  ._* (forks)       12
-  __MACOSX           2
+RESUMO POR TIPO:
+  .DS_Store:        34
+  ._* (forks):      12
+  __MACOSX:          2
 
-ITENS DELETADOS
-14/06/2025 09:32:11   C:\Volumes\Drive\Project\.DS_Store
-14/06/2025 09:32:11   C:\Volumes\Drive\Project\Assets\.DS_Store
+ITENS MOVIDOS PARA A LIXEIRA:
+------------------------------------------------------------
+MODIFICADO EM          ARQUIVO
+------------------------------------------------------------
+14/06/2025 09:32:11    C:\Volumes\Drive\Project\.DS_Store
+14/06/2025 09:32:11    C:\Volumes\Drive\Project\Assets\.DS_Store
 ...
 ```
 
@@ -178,7 +181,6 @@ Built by **Bruno Maia** and **Claude**.
 
 [MIT](LICENSE)
 
----
 ---
 
 <p align="center">
@@ -253,7 +255,7 @@ Abra o PowerShell, cole e pressione Enter. A janela abre imediatamente.
 │                                                          │
 │  ████████████████░░░░  68%  33/48                        │
 │                                                          │
-│  [Escanear]  [🗑 Deletar tudo]  [💾 Salvar log]          │
+│  [Escanear]  [🗑 Mover para Lixeira]  [💾 Salvar log]    │
 │  Status: 33 itens deletados · 15 restantes               │
 ├──────────────────────────────────────────────────────────┤
 │  Enter  escanear  ·  Del  deletar  ·  Esc  cancelar      │
@@ -266,7 +268,7 @@ Abra o PowerShell, cole e pressione Enter. A janela abre imediatamente.
 2. **Configure** — ative/desative *Incluir subpastas* (ativo por padrão). Abra *Opções Avançadas* para habilitar ou desabilitar tipos específicos de arquivo.
 3. **Escanear** — clique em *Escanear* ou pressione `Enter`. O resultado aparece com contagem por tipo.
 4. **Revisar** — clique em *Mostrar detalhes* para expandir a lista rolável com o caminho de cada arquivo encontrado.
-5. **Deletar** — clique em *Deletar tudo* ou pressione `Del`. Uma barra de progresso acompanha a deleção em tempo real.
+5. **Mover para Lixeira** — clique em *Mover para Lixeira* ou pressione `Del`. Uma barra de progresso acompanha a deleção em tempo real.
 6. **Salvar o log** — após a deleção, clique em *Salvar log* para exportar um arquivo `.txt` de auditoria.
 
 ---
@@ -315,21 +317,24 @@ Após a deleção, clique em *Salvar log* para exportar um `.txt`. O nome inclui
 Formato do log:
 
 ```
-GhostSweep v1.0 — Log de exclusao
-==========================================
+GhostSweep v1.0 — Log de limpeza
+============================================================
 Inicio:  14/06/2025 09:32:11
 Fim:     14/06/2025 09:32:14
 Pasta:   C:\Volumes\Drive\Projeto
-Total:   48 itens deletados
+Total:   48 itens  (1.2 MB)
 
-RESUMO POR TIPO
-  .DS_Store         34
-  ._* (forks)       12
-  __MACOSX           2
+RESUMO POR TIPO:
+  .DS_Store:        34
+  ._* (forks):      12
+  __MACOSX:          2
 
-ITENS DELETADOS
-14/06/2025 09:32:11   C:\Volumes\Drive\Projeto\.DS_Store
-14/06/2025 09:32:11   C:\Volumes\Drive\Projeto\Assets\.DS_Store
+ITENS MOVIDOS PARA A LIXEIRA:
+------------------------------------------------------------
+MODIFICADO EM          ARQUIVO
+------------------------------------------------------------
+14/06/2025 09:32:11    C:\Volumes\Drive\Projeto\.DS_Store
+14/06/2025 09:32:11    C:\Volumes\Drive\Projeto\Assets\.DS_Store
 ...
 ```
 

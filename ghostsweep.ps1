@@ -78,14 +78,14 @@ public class FolderDialog {
 "@ }
 
 # C# helper: move itens para Lixeira via SHFileOperation + suporte a cancelamento
-if (-not ([System.Management.Automation.PSTypeName]'MacJunkDeleter').Type) { Add-Type @"
+if (-not ([System.Management.Automation.PSTypeName]'GhostSweepDeleter').Type) { Add-Type @"
 using System;
 using System.IO;
 using System.Collections;
 using System.Threading;
 using System.Runtime.InteropServices;
 
-public class MacJunkDeleter {
+public class GhostSweepDeleter {
     [DllImport("shell32.dll", CharSet = CharSet.Auto)]
     private static extern int SHFileOperation(ref SHFILEOPSTRUCT FileOp);
 
@@ -834,22 +834,6 @@ function Format-Size([long]$bytes) {
     else                           { "$bytes B" }
 }
 
-# Salva/carrega ultima pasta usada no registry
-function Save-LastFolder([string]$path) {
-    try {
-        if (-not (Test-Path "HKCU:\Software\GhostSweep")) {
-            New-Item -Path "HKCU:\Software\GhostSweep" -Force | Out-Null
-        }
-        Set-ItemProperty -Path "HKCU:\Software\GhostSweep" -Name "LastFolder" -Value $path
-    } catch {}
-}
-
-function Load-LastFolder {
-    try {
-        (Get-ItemProperty -Path "HKCU:\Software\GhostSweep" -Name "LastFolder" -ErrorAction SilentlyContinue).LastFolder
-    } catch { "" }
-}
-
 # Salva/carrega historico das ultimas 5 pastas usadas
 function Save-FolderHistory([string]$path) {
     try {
@@ -967,8 +951,7 @@ $doScan = {
             if ($typed -ne $app.folder) {
                 $app.folder              = $typed
                 $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
-        & $resetPathError
-                Save-LastFolder $typed
+                & $resetPathError
                 Save-FolderHistory $typed
                 & $updateHistoryBtn
             }
@@ -1167,10 +1150,9 @@ $c["lblPath"].Add_KeyDown({
         if ([System.IO.Directory]::Exists($typed)) {
             $app.folder              = $typed
             $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
-        & $resetPathError
+            & $resetPathError
             $c["btnScan"].IsEnabled  = $true
             & $closeDetails
-            Save-LastFolder $typed
             Save-FolderHistory $typed
             & $updateHistoryBtn
             & $doScan
@@ -1202,7 +1184,6 @@ $c["lstHistory"].Add_SelectionChanged({
         & $resetPathError
         $c["btnScan"].IsEnabled  = $true
         & $closeDetails
-        Save-LastFolder $sel
         Save-FolderHistory $sel
         & $updateHistoryBtn
         & $doScan
@@ -1225,7 +1206,6 @@ $c["btnSelect"].Add_Click({
         & $resetPathError
         $c["btnScan"].IsEnabled  = $true
         & $closeDetails
-        Save-LastFolder $picked
         Save-FolderHistory $picked
         & $updateHistoryBtn
         & $doScan
@@ -1290,10 +1270,9 @@ $window.Add_Drop({
             $c["lblPath"].Text       = $folder
             $c["lblPath"].ScrollToEnd()
             $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
-        & $resetPathError
+            & $resetPathError
             $c["btnScan"].IsEnabled  = $true
             & $closeDetails
-            Save-LastFolder $folder
             Save-FolderHistory $folder
             & $updateHistoryBtn
             & $doScan
@@ -1440,7 +1419,7 @@ $c["btnDelete"].Add_Click({
     $tmr.Add_Tick($tickHandler)
     $tmr.Start()
 
-    [MacJunkDeleter]::DeleteAsync($items, $sync)
+    [GhostSweepDeleter]::DeleteAsync($items, $sync)
 })
 
 # Salvar log de limpeza
@@ -1530,8 +1509,8 @@ $window.Add_KeyDown({
 
 # ── Carregar ultima pasta usada ao iniciar ────────────────────────────────────
 & $updateHistoryBtn
-$lastF = Load-LastFolder
-if ($lastF -and (Test-Path -LiteralPath $lastF -PathType Container)) {
+$lastF = (Load-FolderHistory)[0]
+if ($lastF) {
     $app.folder              = $lastF
     $c["lblPath"].Text       = $lastF
     $c["lblPath"].ScrollToEnd()
