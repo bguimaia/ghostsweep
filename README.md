@@ -37,6 +37,19 @@ GhostSweep is a single PowerShell script that opens a GUI window, scans for thos
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="assets/Prints/screenshot-02-results.png" width="48%"/>
+  <img src="assets/Prints/screenshot-03-advanced.png" width="48%"/>
+</p>
+<p align="center">
+  <img src="assets/Prints/screenshot-04-details.png" width="48%"/>
+  <img src="assets/Prints/screenshot-05-done.png" width="48%"/>
+</p>
+
+---
+
 ## Installation
 
 **Option 1 — One-liner** (no download required):
@@ -55,29 +68,6 @@ Open PowerShell, paste, press Enter. The window opens immediately.
 ---
 
 ## Usage
-
-```
-┌──────────────────────────────────────────────────────────┐
-│  GhostSweep v1.0                                         │
-├──────────────────────────────────────────────────────────┤
-│  [📁 Select Folder]  C:\Volumes\MyDrive\Project\...      │
-│  [☑] Include subfolders        [Advanced Options ▾]      │
-├──────────────────────────────────────────────────────────┤
-│  48 items found                                          │
-│  .DS_Store: 34  ·  ._*: 12  ·  __MACOSX: 2             │
-│                                                          │
-│  [▶ Show details]                                        │
-│                                                          │
-│  ████████████████░░░░  68%  33/48                        │
-│                                                          │
-│  [Scan]    [🗑 Move to Recycle Bin]    [💾 Save Log]     │
-│  Status: 33 items deleted · 15 remaining                 │
-├──────────────────────────────────────────────────────────┤
-│  Enter  scan  ·  Del  delete  ·  Esc  cancel             │
-└──────────────────────────────────────────────────────────┘
-```
-
-**Step by step:**
 
 1. **Choose a folder** — click *Select Folder*, drag a folder onto the window, type a path directly in the field and press Enter, or click the history button (🕐) to pick a recent folder.
 2. **Configure** — toggle *Include subfolders* (on by default). Open *Advanced Options* to enable/disable specific file types.
@@ -155,12 +145,6 @@ MODIFICADO EM          ARQUIVO
 
 ---
 
-## Contributing
-
-Contributions are welcome. Feel free to open issues, suggest features, or submit pull requests.
-
----
-
 ## Requirements
 
 - Windows 8.1 or later
@@ -169,199 +153,6 @@ Contributions are welcome. Feel free to open issues, suggest features, or submit
 
 ---
 
-## Made by
+## Contributing
 
-Built by **Bruno Maia** and **Claude**.
-
-- [github.com/bguimaia](https://github.com/bguimaia)
-
----
-
-## License
-
-[MIT](LICENSE)
-
----
-
-<p align="center">
-  <img src="assets/Logo-Full.png" alt="GhostSweep" width="480"/>
-</p>
-
-<p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"/></a>
-  <img src="https://img.shields.io/badge/version-1.0-orange.svg" alt="Version 1.0"/>
-  <img src="https://img.shields.io/badge/platform-Windows-0078D4?logo=windows&logoColor=white" alt="Platform: Windows"/>
-  <img src="https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white" alt="PowerShell 5.1+"/>
-  <img src="https://img.shields.io/badge/dependencies-none-brightgreen" alt="No Dependencies"/>
-</p>
-
-<p align="center">
-  <strong>Remove arquivos fantasma do macOS de qualquer pasta no Windows — sem instalar nada, sem dependências, sem permissão de administrador.</strong><br/>
-  <code>.DS_Store</code> · <code>._*</code> resource forks · <code>__MACOSX</code> · <code>.Spotlight-V100</code> · <code>.Trashes</code>
-</p>
-
----
-
-## Por que isso existe
-
-Se você trabalha com arquivos de Mac no Windows — drives compartilhados, HDs externos, Google Drive, ZIPs enviados de um Mac — já viu o fantasma: arquivos de metadados invisíveis que o macOS deixa para trás em toda pasta que toca. No Windows eles aparecem como arquivos corrompidos, poluem buscas e confundem colaboradores.
-
-GhostSweep é um único script PowerShell que abre uma janela, escaneia esses arquivos e os remove com segurança — enviando tudo para a Lixeira para que nada seja perdido por acidente.
-
----
-
-## Destaques
-
-- **Zero dependências** — PowerShell puro + WPF. Distribuído como um único `.ps1`. Funciona em qualquer Windows sem instalar nada.
-- **Seguro por padrão** — arquivos deletados vão para a Lixeira. Desfaça com Ctrl+Z no Explorer.
-- **Controle granular** — ative ou desative cada tipo de arquivo antes de escanear.
-- **Workflow por teclado** — fluxo completo sem precisar do mouse.
-- **Histórico de pastas** — lembra as últimas 5 pastas usadas, persistido entre sessões.
-- **Trilha de auditoria** — exporte um log com timestamps, resumo por tipo e lista completa de caminhos.
-- **Interface adaptável** — janela escala com a resolução da tela. Funciona de 1280px até 4K.
-
----
-
-## Instalação
-
-**Opção 1 — One-liner** (sem download):
-
-```powershell
-irm "https://raw.githubusercontent.com/bguimaia/ghostsweep/main/ghostsweep.ps1" | iex
-```
-
-Abra o PowerShell, cole e pressione Enter. A janela abre imediatamente.
-
-**Opção 2 — Download e execução:**
-
-1. Baixe `ghostsweep.ps1` e `GhostSweep.bat` na mesma pasta
-2. Duplo clique no `GhostSweep.bat`
-
----
-
-## Modo de uso
-
-```
-┌──────────────────────────────────────────────────────────┐
-│  GhostSweep v1.0                                         │
-├──────────────────────────────────────────────────────────┤
-│  [📁 Selecionar Pasta]  C:\Volumes\Drive\Projeto\...     │
-│  [☑] Incluir subpastas      [Opções Avançadas ▾]         │
-├──────────────────────────────────────────────────────────┤
-│  48 itens encontrados                                    │
-│  .DS_Store: 34  ·  ._*: 12  ·  __MACOSX: 2             │
-│                                                          │
-│  [▶ Mostrar detalhes]                                    │
-│                                                          │
-│  ████████████████░░░░  68%  33/48                        │
-│                                                          │
-│  [Escanear]  [🗑 Mover para Lixeira]  [💾 Salvar log]    │
-│  Status: 33 itens deletados · 15 restantes               │
-├──────────────────────────────────────────────────────────┤
-│  Enter  escanear  ·  Del  deletar  ·  Esc  cancelar      │
-└──────────────────────────────────────────────────────────┘
-```
-
-**Passo a passo:**
-
-1. **Escolha uma pasta** — clique em *Selecionar Pasta*, arraste uma pasta para a janela, digite um caminho diretamente no campo e pressione Enter, ou clique no botão de histórico (🕐) para escolher uma pasta recente.
-2. **Configure** — ative/desative *Incluir subpastas* (ativo por padrão). Abra *Opções Avançadas* para habilitar ou desabilitar tipos específicos de arquivo.
-3. **Escanear** — clique em *Escanear* ou pressione `Enter`. O resultado aparece com contagem por tipo.
-4. **Revisar** — clique em *Mostrar detalhes* para expandir a lista rolável com o caminho de cada arquivo encontrado.
-5. **Mover para Lixeira** — clique em *Mover para Lixeira* ou pressione `Del`. Uma barra de progresso acompanha a deleção em tempo real.
-6. **Salvar o log** — após a deleção, clique em *Salvar log* para exportar um arquivo `.txt` de auditoria.
-
----
-
-## Atalhos de teclado
-
-| Tecla   | Ação                                             |
-| ------- | ------------------------------------------------ |
-| `Enter` | Iniciar escaneamento (ou re-escanear)            |
-| `Del`   | Deletar todos os itens encontrados               |
-| `Esc`   | Cancelar escaneamento ou deleção em andamento    |
-
----
-
-## Opções Avançadas
-
-Clique em *Opções Avançadas* para expandir o painel de filtro por tipo. Cada tipo pode ser ativado ou desativado independentemente:
-
-| Opção               | Padrão  | O que faz                                             |
-| ------------------- | ------- | ----------------------------------------------------- |
-| `.DS_Store`         | ✅ Ativo | Arquivos de metadados de pasta do macOS               |
-| `._* (forks)`       | ✅ Ativo | Resource forks (prefixados com `._`)                  |
-| `__MACOSX`          | ✅ Ativo | Pasta fantasma criada ao descompactar ZIPs no Mac     |
-| `.Spotlight-V100`   | ✅ Ativo | Índice de busca do Spotlight em drives externos       |
-| `.Trashes`          | ✅ Ativo | Lixeira do macOS em drives externos                   |
-| Incluir subpastas   | ✅ Ativo | Escanear recursivamente todas as subpastas            |
-
----
-
-## O que remove
-
-| Arquivo / Pasta     | Descrição                                                           |
-| ------------------- | ------------------------------------------------------------------- |
-| `.DS_Store`         | Metadados de pasta do macOS — invisível no Mac, lixo no Windows     |
-| `._ARQUIVO`         | Resource forks — aparecem como arquivos corrompidos no Windows      |
-| `__MACOSX/`         | Pasta fantasma criada ao descompactar ZIPs do macOS no Windows      |
-| `.Spotlight-V100`   | Índice do Spotlight — sobra em drives externos formatados no macOS  |
-| `.Trashes`          | Lixeira do macOS em drives externos                                 |
-
----
-
-## Arquivo de log
-
-Após a deleção, clique em *Salvar log* para exportar um `.txt`. O nome inclui o timestamp de quando a deleção iniciou (ex: `ghostsweep-2025-06-14_09-32-11.txt`).
-
-Formato do log:
-
-```
-GhostSweep v1.0 — Log de limpeza
-============================================================
-Inicio:  14/06/2025 09:32:11
-Fim:     14/06/2025 09:32:14
-Pasta:   C:\Volumes\Drive\Projeto
-Total:   48 itens  (1.2 MB)
-
-RESUMO POR TIPO:
-  .DS_Store:        34
-  ._* (forks):      12
-  __MACOSX:          2
-
-ITENS MOVIDOS PARA A LIXEIRA:
-------------------------------------------------------------
-MODIFICADO EM          ARQUIVO
-------------------------------------------------------------
-14/06/2025 09:32:11    C:\Volumes\Drive\Projeto\.DS_Store
-14/06/2025 09:32:11    C:\Volumes\Drive\Projeto\Assets\.DS_Store
-...
-```
-
----
-
-## Contribuindo
-
-Contribuições são bem-vindas. Abra uma issue, sugira funcionalidades ou envie um pull request.
-
----
-
-## Requisitos
-
-- Windows 8.1 ou superior
-- Windows PowerShell 5.1+ **ou** PowerShell 7+
-- Sem necessidade de permissão de administrador
-
----
-
-## Feito por
-
-Desenvolvido por **Bruno Maia** e **Claude**.
-
-- [github.com/bguimaia](https://github.com/bguimaia)
-
----
-
-## Licença
-
-[MIT](LICENSE)
+Contributions are welcome. Feel free to open issues, suggest features, or submit pull requests.

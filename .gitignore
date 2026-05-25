@@ -5,6 +5,12 @@ MEMORY.md
 # Script macOS — fora do repo por hora
 mac_cleaner.command
 
+# Assets extras — ficam local, fora do repo
+assets/Icone_256x256.png
+assets/Logo-Full-Transparent.png
+assets/Wordmark.png
+
 # Pastas de teste locais
 _teste/
 _test/
+GhostSweep_demo/
