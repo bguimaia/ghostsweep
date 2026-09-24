@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"/></a>
-  <img src="https://img.shields.io/badge/version-1.0-orange.svg" alt="Version 1.0"/>
+  <img src="https://img.shields.io/badge/version-1.1-orange.svg" alt="Version 1.1"/>
   <img src="https://img.shields.io/badge/platform-Windows-0078D4?logo=windows&logoColor=white" alt="Platform: Windows"/>
   <img src="https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white" alt="PowerShell 5.1+"/>
   <img src="https://img.shields.io/badge/dependencies-none-brightgreen" alt="No Dependencies"/>
@@ -28,12 +28,13 @@ GhostSweep is a single PowerShell script that opens a GUI window, scans for thos
 ## Highlights
 
 - **Zero dependencies** — pure PowerShell + WPF. Ships as one `.ps1` file. Runs on any Windows without installing anything.
-- **Safe by default** — deleted files go to the Recycle Bin. Undo anytime with Ctrl+Z in Explorer.
+- **Safe by default** — files go to the Recycle Bin, restorable anytime. USB flash drives and network shares have no Recycle Bin, so GhostSweep warns you before deleting permanently there.
+- **Stays in scope** — never follows junctions or symlinks out of the folder you picked.
 - **Granular control** — enable or disable each file type before scanning. Run only what you need.
 - **Keyboard-first** — full workflow without touching the mouse. Scan → review → delete → done.
 - **Folder history** — remembers your last 5 folders, persisted across sessions.
-- **Audit trail** — export a timestamped log with breakdown by type and full path list.
-- **Adaptive UI** — window scales to your screen resolution. Works from 1280px up to 4K.
+- **Audit trail** — export a timestamped log with breakdown by type, full path list, and any items that failed.
+- **Adaptive UI** — window width adapts to your screen (560–720px), DPI-aware up to 4K.
 
 ---
 
@@ -55,7 +56,7 @@ GhostSweep is a single PowerShell script that opens a GUI window, scans for thos
 **Option 1 — One-liner** (no download required):
 
 ```powershell
-irm "https://raw.githubusercontent.com/bguimaia/ghostsweep/main/ghostsweep.ps1" | iex
+irm "https://raw.githubusercontent.com/bguimaia/ghostsweep/v1.1.0/ghostsweep.ps1" | iex
 ```
 
 Open PowerShell, paste, press Enter. The window opens immediately.
@@ -69,12 +70,14 @@ Open PowerShell, paste, press Enter. The window opens immediately.
 
 ## Usage
 
-1. **Choose a folder** — click *Select Folder*, drag a folder onto the window, type a path directly in the field and press Enter, or click the history button (🕐) to pick a recent folder.
-2. **Configure** — toggle *Include subfolders* (on by default). Open *Advanced Options* to enable/disable specific file types.
-3. **Scan** — click *Scan* or press `Enter`. Results appear with a count per type.
-4. **Review** — click *Show details* to expand a scrollable list of every found path.
-5. **Move to Recycle Bin** — click *Move to Recycle Bin* or press `Del`. A progress bar tracks deletion in real time.
-6. **Save the log** — after deletion, click *Save Log* to export a `.txt` audit file.
+> The interface and the exported log are in Portuguese. Button names are shown below as they appear on screen, with a translation.
+
+1. **Choose a folder** — click *Selecionar Pasta* (Select Folder), drag a folder onto the window, type a path in the field and press Enter, or click the history button (🕐) to pick a recent folder.
+2. **Configure** — toggle *Incluir subpastas* (Include subfolders, on by default). Open *Opções Avançadas* (Advanced Options) to enable/disable specific file types.
+3. **Scan** — click *Escanear* (Scan) or press `Enter`. Results appear with a count per type.
+4. **Review** — click *Ver detalhes* (Show details) to expand a scrollable list of every found path. Double-click a path to open it in Explorer.
+5. **Clean** — click *Mover para Lixeira* (Move to Recycle Bin) or press `Del`. A progress bar tracks it in real time; `Esc` cancels.
+6. **Save the log** — afterwards, click *Salvar log* (Save log) to export a `.txt` audit file.
 
 ---
 
@@ -83,14 +86,14 @@ Open PowerShell, paste, press Enter. The window opens immediately.
 | Key     | Action                                      |
 | ------- | ------------------------------------------- |
 | `Enter` | Start scan (or re-scan after deletion)      |
-| `Del`   | Delete all found items (after a scan)       |
+| `Del`   | Move all found items to the Recycle Bin     |
 | `Esc`   | Cancel running scan or deletion             |
 
 ---
 
 ## Advanced Options
 
-Click *Advanced Options* to expand the type filter panel. Each file type can be enabled or disabled independently:
+Click *Opções Avançadas* to expand the type filter panel. Each file type can be enabled or disabled independently:
 
 | Option              | Default | What it does                                         |
 | ------------------- | ------- | ---------------------------------------------------- |
@@ -117,12 +120,12 @@ Click *Advanced Options* to expand the type filter panel. Each file type can be 
 
 ## Log File
 
-After a deletion, click *Save Log* to export a `.txt` file. The filename includes the timestamp of when the deletion started (e.g. `ghostsweep-2025-06-14_09-32-11.txt`).
+After cleaning, click *Salvar log* to export a `.txt` file. The filename includes the timestamp of when the cleaning started (e.g. `ghostsweep-2025-06-14_09-32-11.txt`). Only items actually processed are listed; if the run was cancelled or some items failed, the log says so and lists the failures under `FALHARAM`.
 
 Log format:
 
 ```
-GhostSweep v1.0 — Log de limpeza
+GhostSweep v1.1 — Log de limpeza
 ============================================================
 Inicio:  14/06/2025 09:32:11
 Fim:     14/06/2025 09:32:14
@@ -132,14 +135,14 @@ Total:   48 itens  (1.2 MB)
 RESUMO POR TIPO:
   .DS_Store:        34
   ._* (forks):      12
-  __MACOSX:          2
+  __MACOSX:         2
 
 ITENS MOVIDOS PARA A LIXEIRA:
 ------------------------------------------------------------
-MODIFICADO EM          ARQUIVO
+MODIFICADO EM         ARQUIVO
 ------------------------------------------------------------
-14/06/2025 09:32:11    C:\Volumes\Drive\Project\.DS_Store
-14/06/2025 09:32:11    C:\Volumes\Drive\Project\Assets\.DS_Store
+14/06/2025 09:32:11   C:\Volumes\Drive\Project\.DS_Store
+14/06/2025 09:32:11   C:\Volumes\Drive\Project\Assets\.DS_Store
 ...
 ```
 

@@ -1,13 +1,22 @@
-# GhostSweep v1.0 — Windows
+# GhostSweep — Windows (versao em $AppVersion)
 # Remove .DS_Store, ._* (resource forks), __MACOSX e outros arquivos fantasma do macOS
 # Requer: Windows PowerShell 5.1+ ou PowerShell 7+
 #
 # Feito por Bruno Maia & Claude
 # https://github.com/bguimaia/ghostsweep
 
+$AppVersion = "1.1"
+
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Windows.Forms
 
+# Erro fatal na inicializacao vira MessageBox (o .bat roda com janela oculta)
+trap {
+    [System.Windows.MessageBox]::Show("Erro ao iniciar o GhostSweep:`n`n$_", "GhostSweep", "OK", "Error") | Out-Null
+    break
+}
+
 # C# helper: picker moderno IFileDialog (Vista+) — zero dependencias
+# Interfaces COM declaradas por completo: a ordem do vtable exige todos os membros, mesmo os nao usados
 if (-not ([System.Management.Automation.PSTypeName]'FolderDialog').Type) { Add-Type @"
 using System;
 using System.Runtime.InteropServices;
@@ -108,6 +117,8 @@ public class GhostSweepDeleter {
     private const short FOF_NOERRORUI      = 0x0400;
 
     public static void DeleteAsync(string[] items, Hashtable sync) {
+        var failed = ArrayList.Synchronized(new ArrayList());
+        sync["failed"] = failed;
         var t = new Thread(() => {
             int deleted = 0, errors = 0, progress = 0;
             foreach (string item in items) {
@@ -135,8 +146,8 @@ public class GhostSweepDeleter {
                     };
                     int ret = SHFileOperation(ref op);
                     if (ret == 0 && !op.fAnyOperationsAborted) deleted++;
-                    else errors++;
-                } catch { errors++; }
+                    else { errors++; failed.Add(item); }
+                } catch { errors++; failed.Add(item); }
 
                 progress++;
                 sync["deleted"]  = deleted;
@@ -156,36 +167,54 @@ public class GhostSweepDeleter {
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="GhostSweep v1.0"
+        Title="GhostSweep v$AppVersion"
         SizeToContent="Height"
         Width="600" MinWidth="580" MinHeight="520"
         WindowStartupLocation="CenterScreen"
         AllowDrop="True"
-        FontFamily="Inter, Segoe UI"
+        FontFamily="Outfit, Segoe UI"
         FontSize="13"
         Background="#0d0d0d">
   <Window.Resources>
 
-    <!-- Botao primario (accent creme) -->
+    <!-- Paleta:
+         bg #0d0d0d · surface #161616 · surface2 #1f1f1f · border #2a2a2a
+         text #e8e8e8 · muted #888 (minimo AA para qualquer texto) · accent #FDEABF (pouco, so o que importa)
+         warn #E0A83C so para erro/atencao, sempre com icone + palavra (nunca so cor)
+         Raios: 8 botoes/campos, 12 paineis. Tipo: 11 / 12 / 13 / 15 / 20 (+36 no numero-heroi) -->
+
+    <!-- Anel de foco — aparece so na navegacao por teclado -->
+    <Style x:Key="FocusRing">
+      <Setter Property="Control.Template">
+        <Setter.Value>
+          <ControlTemplate>
+            <Border Margin="-3" BorderBrush="#FDEABF" BorderThickness="2" CornerRadius="10"/>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Botao primario (accent) — uma acao principal por tela -->
     <Style x:Key="PBtn" TargetType="Button">
-      <Setter Property="Background"      Value="#FDEABF"/>
-      <Setter Property="Foreground"      Value="#0d0d0d"/>
-      <Setter Property="BorderThickness" Value="0"/>
-      <Setter Property="FontWeight"      Value="SemiBold"/>
-      <Setter Property="Cursor"          Value="Hand"/>
+      <Setter Property="Background"       Value="#FDEABF"/>
+      <Setter Property="Foreground"       Value="#111"/>
+      <Setter Property="BorderThickness"  Value="0"/>
+      <Setter Property="FontWeight"       Value="SemiBold"/>
+      <Setter Property="Cursor"           Value="Hand"/>
+      <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
-            <Border Background="{TemplateBinding Background}" CornerRadius="7" Padding="18,10">
+            <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="18,10">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="#c9b78a"/>
+                <Setter Property="Background" Value="#FFF3D6"/>
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Background" Value="#161616"/>
-                <Setter Property="Foreground"  Value="#555"/>
+                <Setter Property="Foreground" Value="#555"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -195,56 +224,29 @@ public class GhostSweepDeleter {
 
     <!-- Botao secundario (surface) -->
     <Style x:Key="SBtn" TargetType="Button">
-      <Setter Property="Background"      Value="#161616"/>
-      <Setter Property="Foreground"      Value="#e8e8e8"/>
-      <Setter Property="BorderBrush"     Value="#2a2a2a"/>
-      <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="Cursor"          Value="Hand"/>
+      <Setter Property="Background"       Value="#161616"/>
+      <Setter Property="Foreground"       Value="#e8e8e8"/>
+      <Setter Property="BorderBrush"      Value="#2a2a2a"/>
+      <Setter Property="BorderThickness"  Value="1"/>
+      <Setter Property="Cursor"           Value="Hand"/>
+      <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
             <Border Background="{TemplateBinding Background}"
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}"
-                    CornerRadius="7" Padding="14,10">
+                    CornerRadius="8" Padding="14,10">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="#1f1f1f"/>
+                <Setter Property="Background"  Value="#1f1f1f"/>
                 <Setter Property="BorderBrush" Value="#555"/>
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Background" Value="#111"/>
                 <Setter Property="Foreground"  Value="#555"/>
-                <Setter Property="BorderBrush" Value="#161616"/>
-              </Trigger>
-            </ControlTemplate.Triggers>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
-    </Style>
-
-    <!-- Botao cancelar (laranja suave) -->
-    <Style x:Key="CBtn" TargetType="Button">
-      <Setter Property="Background"      Value="#2a1a0a"/>
-      <Setter Property="Foreground"      Value="#C4907A"/>
-      <Setter Property="BorderBrush"     Value="#3a2010"/>
-      <Setter Property="BorderThickness" Value="1"/>
-      <Setter Property="Cursor"          Value="Hand"/>
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="Button">
-            <Border Background="{TemplateBinding Background}"
-                    BorderBrush="{TemplateBinding BorderBrush}"
-                    BorderThickness="{TemplateBinding BorderThickness}"
-                    CornerRadius="7" Padding="14,10">
-              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Border>
-            <ControlTemplate.Triggers>
-              <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="#3a2515"/>
-                <Setter Property="BorderBrush" Value="#C4907A"/>
+                <Setter Property="BorderBrush" Value="#1f1f1f"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -349,18 +351,19 @@ public class GhostSweepDeleter {
       </Style.Triggers>
     </Style>
 
-    <!-- CheckBox customizado — dark theme -->
+    <!-- CheckBox — marcado fica claro (texto #e8e8e8), desmarcado em muted -->
     <Style TargetType="CheckBox">
-      <Setter Property="Foreground" Value="#666"/>
-      <Setter Property="Cursor"     Value="Hand"/>
+      <Setter Property="Foreground"       Value="#888"/>
+      <Setter Property="Cursor"           Value="Hand"/>
+      <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="CheckBox">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border x:Name="box" Width="13" Height="13" CornerRadius="3"
-                      Background="Transparent" BorderBrush="#333" BorderThickness="1.5"
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Background="Transparent">
+              <Border x:Name="box" Width="14" Height="14" CornerRadius="4"
+                      Background="Transparent" BorderBrush="#666" BorderThickness="1.5"
                       Margin="0,0,6,0" VerticalAlignment="Center">
-                <TextBlock x:Name="chk" Text="&#x2713;" FontSize="9" FontWeight="Bold"
+                <TextBlock x:Name="chk" Text="&#x2713;" FontSize="10" FontWeight="Bold"
                            Foreground="#FDEABF" HorizontalAlignment="Center"
                            VerticalAlignment="Center" Margin="0,-1,0,0"
                            Visibility="Collapsed"/>
@@ -372,10 +375,10 @@ public class GhostSweepDeleter {
                 <Setter TargetName="box" Property="BorderBrush"  Value="#FDEABF"/>
                 <Setter TargetName="box" Property="Background"   Value="#1c1505"/>
                 <Setter TargetName="chk" Property="Visibility"   Value="Visible"/>
-                <Setter Property="Foreground" Value="#888"/>
+                <Setter Property="Foreground" Value="#e8e8e8"/>
               </Trigger>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="box" Property="BorderBrush" Value="#555"/>
+                <Setter TargetName="box" Property="BorderBrush" Value="#888"/>
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -383,7 +386,7 @@ public class GhostSweepDeleter {
       </Setter>
     </Style>
 
-    <!-- ListBoxItem customizado — dark theme sem highlight azul do sistema -->
+    <!-- ListBoxItem — dark theme sem highlight azul do sistema -->
     <Style TargetType="ListBoxItem">
       <Setter Property="Padding" Value="10,6"/>
       <Setter Property="Cursor"  Value="Hand"/>
@@ -391,12 +394,12 @@ public class GhostSweepDeleter {
         <Setter.Value>
           <ControlTemplate TargetType="ListBoxItem">
             <Border x:Name="bg" Background="Transparent"
-                    CornerRadius="5" Padding="{TemplateBinding Padding}">
+                    CornerRadius="4" Padding="{TemplateBinding Padding}">
               <ContentPresenter/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="bg" Property="Background" Value="#222"/>
+                <Setter TargetName="bg" Property="Background" Value="#1f1f1f"/>
               </Trigger>
               <Trigger Property="IsSelected" Value="True">
                 <Setter TargetName="bg" Property="Background" Value="#2a2a2a"/>
@@ -407,27 +410,27 @@ public class GhostSweepDeleter {
       </Setter>
     </Style>
 
-    <!-- Botao icone flat (historico de pastas, contextos sem borda) -->
+    <!-- Botao icone flat (historico de pastas) -->
     <Style x:Key="IconBtn" TargetType="Button">
-      <Setter Property="Background"   Value="Transparent"/>
-      <Setter Property="BorderBrush"  Value="Transparent"/>
-      <Setter Property="BorderThickness" Value="0"/>
-      <Setter Property="Cursor"       Value="Hand"/>
-      <Setter Property="Padding"      Value="7,5"/>
-      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Background"       Value="Transparent"/>
+      <Setter Property="BorderBrush"      Value="Transparent"/>
+      <Setter Property="BorderThickness"  Value="0"/>
+      <Setter Property="Cursor"           Value="Hand"/>
+      <Setter Property="Padding"          Value="7,5"/>
+      <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="Button">
-            <Border x:Name="bd" Background="Transparent" CornerRadius="5"
+            <Border x:Name="bd" Background="Transparent" CornerRadius="6"
                     Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="bd" Property="Background" Value="#252525"/>
+                <Setter TargetName="bd" Property="Background" Value="#1f1f1f"/>
               </Trigger>
               <Trigger Property="IsPressed" Value="True">
-                <Setter TargetName="bd" Property="Background" Value="#303030"/>
+                <Setter TargetName="bd" Property="Background" Value="#2a2a2a"/>
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.35"/>
@@ -454,9 +457,9 @@ public class GhostSweepDeleter {
       <RowDefinition Height="Auto"/>  <!-- 9: Atalhos hint -->
     </Grid.RowDefinitions>
 
-    <!-- Titulo + Logo -->
+    <!-- Titulo -->
     <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
-      <TextBlock Text="GhostSweep" FontSize="21" FontWeight="Bold"
+      <TextBlock Text="GhostSweep" FontSize="20" FontWeight="Bold"
                  Foreground="#e8e8e8" VerticalAlignment="Center"/>
     </StackPanel>
 
@@ -474,15 +477,26 @@ public class GhostSweepDeleter {
         </StackPanel>
       </Button>
       <!-- Path + botao de historico integrado no final do campo -->
-      <Border x:Name="pathBorder" Grid.Column="1" Background="#161616" CornerRadius="7"
-              BorderBrush="#2a2a2a" BorderThickness="1" Padding="12,6,4,6">
+      <!-- Borda dourada no foco (via Style); erro de caminho sobrescreve com valor local -->
+      <Border x:Name="pathBorder" Grid.Column="1" Background="#161616" CornerRadius="8"
+              BorderThickness="1" Padding="12,6,4,6">
+        <Border.Style>
+          <Style TargetType="Border">
+            <Setter Property="BorderBrush" Value="#2a2a2a"/>
+            <Style.Triggers>
+              <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter Property="BorderBrush" Value="#FDEABF"/>
+              </Trigger>
+            </Style.Triggers>
+          </Style>
+        </Border.Style>
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
           </Grid.ColumnDefinitions>
           <TextBox x:Name="lblPath" Grid.Column="0" Text="Nenhuma pasta selecionada"
-                   Foreground="#555" VerticalAlignment="Center"
+                   Foreground="#888" VerticalAlignment="Center"
                    Background="Transparent" BorderThickness="0"
                    CaretBrush="#FDEABF" SelectionBrush="#5a4000"
                    FocusVisualStyle="{x:Null}" Padding="0,3"
@@ -490,22 +504,23 @@ public class GhostSweepDeleter {
           <!-- Botao historico — fim do campo, icone clock + seta -->
           <Grid Grid.Column="1" Margin="4,0,0,0">
             <Button x:Name="btnHistory" Style="{StaticResource IconBtn}"
-                    IsEnabled="False" ToolTip="Pastas recentes">
+                    IsEnabled="False" ToolTip="Pastas recentes"
+                    AutomationProperties.Name="Pastas recentes">
               <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="&#x1F550;" FontFamily="Segoe UI Emoji" FontSize="12"
-                           Foreground="#555" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                <TextBlock Text="&#x25BE;" FontSize="10" Foreground="#555"
+                           Foreground="#888" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBlock Text="&#x25BE;" FontSize="11" Foreground="#888"
                            VerticalAlignment="Center"/>
               </StackPanel>
             </Button>
             <Popup x:Name="popHistory" Placement="Bottom" StaysOpen="False"
                    PlacementTarget="{Binding ElementName=pathBorder}"
                    AllowsTransparency="True" VerticalOffset="4">
-              <Border Background="#1a1a1a" BorderBrush="#333" BorderThickness="1"
-                      CornerRadius="7" Padding="4"
+              <Border Background="#1f1f1f" BorderBrush="#2a2a2a" BorderThickness="1"
+                      CornerRadius="8" Padding="4"
                       MinWidth="{Binding ActualWidth, ElementName=pathBorder}">
                 <ListBox x:Name="lstHistory" Background="Transparent" BorderThickness="0"
-                         Foreground="#ccc" FontSize="12" Padding="0" MaxHeight="160"/>
+                         Foreground="#e8e8e8" FontSize="12" Padding="0" MaxHeight="160"/>
               </Border>
             </Popup>
           </Grid>
@@ -522,9 +537,9 @@ public class GhostSweepDeleter {
       <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center"
                   Margin="0,0,12,0">
         <CheckBox x:Name="chkRecursive" Content="Incluir subpastas" IsChecked="True"
-                  FontSize="13" Foreground="#888"/>
+                  FontSize="13"/>
         <TextBlock Text="Escaneia a pasta e todas as subpastas recursivamente"
-                   FontSize="12" Foreground="#444" Margin="19,3,0,0"
+                   FontSize="12" Foreground="#888" Margin="20,3,0,0"
                    TextWrapping="Wrap"/>
       </StackPanel>
       <Button x:Name="btnAdvanced" Grid.Column="1" Style="{StaticResource SBtn}"
@@ -539,17 +554,17 @@ public class GhostSweepDeleter {
       </Button>
     </Grid>
 
-    <!-- Painel de opcoes avancadas (colapsavel) — linhas zebradas -->
+    <!-- Painel de opcoes avancadas (colapsavel) -->
     <Border x:Name="pnlAdvanced" Grid.Row="3"
-            Background="#111" CornerRadius="8"
+            Background="#161616" CornerRadius="12"
             BorderBrush="#2a2a2a" BorderThickness="1"
             Margin="0,0,0,14" Visibility="Collapsed"
             ClipToBounds="True">
       <StackPanel>
         <TextBlock Text="TIPOS DE ARQUIVO" FontSize="11" FontWeight="SemiBold"
-                   Foreground="#444" Margin="16,14,16,10"/>
-        <!-- .DS_Store — linha clara -->
-        <Border Background="#1a1a1a" Padding="16,9,16,9">
+                   Foreground="#888" Margin="16,14,16,6"/>
+        <!-- .DS_Store -->
+        <Border Padding="16,9,16,9">
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="145"/>
@@ -557,11 +572,11 @@ public class GhostSweepDeleter {
             </Grid.ColumnDefinitions>
             <CheckBox x:Name="chkDS" Content=".DS_Store" IsChecked="True" Grid.Column="0" VerticalAlignment="Center"/>
             <TextBlock Grid.Column="1" Text="Indice do Finder com preferencias de icones e pastas"
-                       Foreground="#555" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                       Foreground="#888" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="8,0,0,0"/>
           </Grid>
         </Border>
-        <!-- ._* — linha escura -->
-        <Border Background="#111" Padding="16,9,16,9">
+        <!-- ._* -->
+        <Border Padding="16,9,16,9">
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="145"/>
@@ -569,11 +584,11 @@ public class GhostSweepDeleter {
             </Grid.ColumnDefinitions>
             <CheckBox x:Name="chkRF" Content="._* (forks)" IsChecked="True" Grid.Column="0" VerticalAlignment="Center"/>
             <TextBlock Grid.Column="1" Text="Resource forks do macOS em drives externos"
-                       Foreground="#555" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                       Foreground="#888" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="8,0,0,0"/>
           </Grid>
         </Border>
-        <!-- __MACOSX — linha clara -->
-        <Border Background="#1a1a1a" Padding="16,9,16,9">
+        <!-- __MACOSX -->
+        <Border Padding="16,9,16,9">
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="145"/>
@@ -581,11 +596,11 @@ public class GhostSweepDeleter {
             </Grid.ColumnDefinitions>
             <CheckBox x:Name="chkMX" Content="__MACOSX" IsChecked="True" Grid.Column="0" VerticalAlignment="Center"/>
             <TextBlock Grid.Column="1" Text="Pasta oculta gerada ao zipar arquivos no macOS"
-                       Foreground="#555" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                       Foreground="#888" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="8,0,0,0"/>
           </Grid>
         </Border>
-        <!-- .Spotlight — linha escura -->
-        <Border Background="#111" Padding="16,9,16,9">
+        <!-- .Spotlight -->
+        <Border Padding="16,9,16,9">
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="145"/>
@@ -593,11 +608,11 @@ public class GhostSweepDeleter {
             </Grid.ColumnDefinitions>
             <CheckBox x:Name="chkSP" Content=".Spotlight-V100" IsChecked="True" Grid.Column="0" VerticalAlignment="Center"/>
             <TextBlock Grid.Column="1" Text="Cache do Spotlight (busca do macOS) em volumes externos"
-                       Foreground="#555" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                       Foreground="#888" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="8,0,0,0"/>
           </Grid>
         </Border>
-        <!-- .Trashes — linha clara -->
-        <Border Background="#1a1a1a" Padding="16,9,16,9">
+        <!-- .Trashes -->
+        <Border Padding="16,9,16,9">
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="145"/>
@@ -605,7 +620,7 @@ public class GhostSweepDeleter {
             </Grid.ColumnDefinitions>
             <CheckBox x:Name="chkTR" Content=".Trashes" IsChecked="True" Grid.Column="0" VerticalAlignment="Center"/>
             <TextBlock Grid.Column="1" Text="Lixeira do macOS em volumes externos"
-                       Foreground="#555" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                       Foreground="#888" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="8,0,0,0"/>
           </Grid>
         </Border>
       </StackPanel>
@@ -613,7 +628,7 @@ public class GhostSweepDeleter {
 
     <!-- Drop hint (estado inicial) -->
     <Border x:Name="pnlDropHint" Grid.Row="4"
-            Background="#111" CornerRadius="10"
+            Background="#161616" CornerRadius="12"
             BorderBrush="#2a2a2a" BorderThickness="1.5"
             Padding="20,36" Margin="0,0,0,12"
             Visibility="Visible">
@@ -621,14 +636,14 @@ public class GhostSweepDeleter {
         <TextBlock Text="&#x1F4C1;" FontFamily="Segoe UI Emoji" FontSize="36"
                    HorizontalAlignment="Center" Margin="0,0,0,12" Opacity="0.45"/>
         <TextBlock Text="Arraste uma pasta aqui" FontSize="15" FontWeight="SemiBold"
-                   Foreground="#555" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                   Foreground="#e8e8e8" HorizontalAlignment="Center" Margin="0,0,0,4"/>
         <TextBlock Text="ou use o botao Selecionar Pasta acima" FontSize="12"
-                   Foreground="#333" HorizontalAlignment="Center"/>
+                   Foreground="#888" HorizontalAlignment="Center"/>
       </StackPanel>
     </Border>
 
     <!-- Card de resultados (aparece apos primeiro scan) -->
-    <Border x:Name="pnlResultsCard" Grid.Row="4" Background="#161616" CornerRadius="10"
+    <Border x:Name="pnlResultsCard" Grid.Row="4" Background="#161616" CornerRadius="12"
             BorderBrush="#2a2a2a" BorderThickness="1"
             Padding="18,16" Margin="0,0,0,12"
             Visibility="Collapsed">
@@ -639,10 +654,10 @@ public class GhostSweepDeleter {
           <TextBlock x:Name="lblCountLabel" Text=""   FontSize="15" Foreground="#888"
                      VerticalAlignment="Bottom" Margin="10,0,0,8"/>
         </StackPanel>
-        <!-- Tamanho para liberar -->
+        <!-- Tamanho para liberar (accent atenuado: o dourado cheio fica so no numero) -->
         <TextBlock x:Name="lblSize" Text="" FontSize="15" FontWeight="SemiBold"
-                   Foreground="#FDEABF" Margin="0,8,0,0"/>
-        <!-- Breakdown por tipo (preenchido dinamicamente com cores) -->
+                   Foreground="#c9b78a" Margin="0,8,0,0"/>
+        <!-- Breakdown por tipo (preenchido dinamicamente) -->
         <StackPanel x:Name="spBreakdown" Margin="0,6,0,0"/>
         <!-- Botoes inferiores do card -->
         <WrapPanel Margin="0,14,0,0">
@@ -650,7 +665,7 @@ public class GhostSweepDeleter {
                   Margin="0,0,8,0" FontSize="13" Padding="12,8">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
               <TextBlock x:Name="lblToggleIco" Text="&#x25BC;"
-                         FontSize="9" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                         FontSize="11" VerticalAlignment="Center" Margin="0,0,7,0"/>
               <TextBlock x:Name="lblToggleTxt" Text="Ver detalhes" VerticalAlignment="Center"/>
             </StackPanel>
           </Button>
@@ -675,11 +690,12 @@ public class GhostSweepDeleter {
     </Border>
 
     <!-- Lista de detalhes (colapsavel) — duplo clique abre pasta no Explorer -->
-    <Border x:Name="pnlDetails" Grid.Row="5" Background="#111"
-            CornerRadius="7" BorderBrush="#2a2a2a" BorderThickness="1"
+    <Border x:Name="pnlDetails" Grid.Row="5" Background="#161616"
+            CornerRadius="12" BorderBrush="#2a2a2a" BorderThickness="1"
             Margin="0,0,0,12" MaxHeight="160" Visibility="Collapsed">
+      <!-- Mono = dado (caminhos) -->
       <ListBox x:Name="lstFiles" Background="Transparent" BorderThickness="0"
-               Foreground="#888" FontFamily="Consolas, Courier New" FontSize="12" Padding="10,6"
+               Foreground="#888" FontFamily="Cascadia Mono, Consolas" FontSize="12" Padding="10,6"
                ScrollViewer.HorizontalScrollBarVisibility="Auto"
                ScrollViewer.VerticalScrollBarVisibility="Auto"
                ToolTip="Duplo clique para abrir a pasta no Explorer"/>
@@ -692,8 +708,8 @@ public class GhostSweepDeleter {
         <RowDefinition Height="Auto"/>
       </Grid.RowDefinitions>
       <Grid Grid.Row="0" Margin="0,0,0,5">
-        <TextBlock x:Name="lblProgTxt" Text="" Foreground="#555" FontSize="12"/>
-        <TextBlock x:Name="lblProgPct" Text="" Foreground="#555" FontSize="12" HorizontalAlignment="Right"/>
+        <TextBlock x:Name="lblProgTxt" Text="" Foreground="#888" FontSize="12"/>
+        <TextBlock x:Name="lblProgPct" Text="" Foreground="#888" FontSize="12" HorizontalAlignment="Right"/>
       </Grid>
       <ProgressBar x:Name="pbMain" Grid.Row="1" Height="7" Value="0" Maximum="100"/>
     </Grid>
@@ -721,7 +737,7 @@ public class GhostSweepDeleter {
             <TextBlock Text="Mover para Lixeira" VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
-        <Button x:Name="btnCancel" Style="{StaticResource CBtn}" Visibility="Collapsed">
+        <Button x:Name="btnCancel" Style="{StaticResource SBtn}" Visibility="Collapsed">
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock Text="&#x2715;" FontSize="14"
                        VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -733,27 +749,27 @@ public class GhostSweepDeleter {
 
     <!-- Status -->
     <TextBlock x:Name="lblStatus" Grid.Row="8" Text="Pronto."
-               Foreground="#555" FontSize="13" Margin="0,12,0,0"/>
+               Foreground="#888" FontSize="13" Margin="0,12,0,0" TextWrapping="Wrap"/>
 
     <!-- Hints de atalhos — keycaps -->
     <StackPanel Grid.Row="9" Orientation="Horizontal" Margin="0,12,0,0">
-      <Border Background="#1a1a1a" BorderBrush="#333" BorderThickness="1"
+      <Border Background="#1f1f1f" BorderBrush="#2a2a2a" BorderThickness="1"
               CornerRadius="4" Padding="6,3" Margin="0,0,6,0">
-        <TextBlock Text="Enter" Foreground="#888" FontSize="11"/>
+        <TextBlock Text="Enter" Foreground="#e8e8e8" FontSize="11"/>
       </Border>
-      <TextBlock Text="Escanear" Foreground="#444" FontSize="11"
+      <TextBlock Text="Escanear" Foreground="#888" FontSize="11"
                  VerticalAlignment="Center" Margin="0,0,16,0"/>
-      <Border Background="#1a1a1a" BorderBrush="#333" BorderThickness="1"
+      <Border Background="#1f1f1f" BorderBrush="#2a2a2a" BorderThickness="1"
               CornerRadius="4" Padding="6,3" Margin="0,0,6,0">
-        <TextBlock Text="Del" Foreground="#888" FontSize="11"/>
+        <TextBlock Text="Del" Foreground="#e8e8e8" FontSize="11"/>
       </Border>
-      <TextBlock Text="Mover" Foreground="#444" FontSize="11"
+      <TextBlock Text="Mover" Foreground="#888" FontSize="11"
                  VerticalAlignment="Center" Margin="0,0,16,0"/>
-      <Border Background="#1a1a1a" BorderBrush="#333" BorderThickness="1"
+      <Border Background="#1f1f1f" BorderBrush="#2a2a2a" BorderThickness="1"
               CornerRadius="4" Padding="6,3" Margin="0,0,6,0">
-        <TextBlock Text="Esc" Foreground="#888" FontSize="11"/>
+        <TextBlock Text="Esc" Foreground="#e8e8e8" FontSize="11"/>
       </Border>
-      <TextBlock Text="Cancelar" Foreground="#444" FontSize="11"
+      <TextBlock Text="Cancelar" Foreground="#888" FontSize="11"
                  VerticalAlignment="Center"/>
     </StackPanel>
   </Grid>
@@ -780,7 +796,6 @@ $app = [System.Collections.Hashtable]::Synchronized(@{
     detailsOpen = $false
     scanSync    = $null   # hashtable da operacao de scan em andamento
     deleteSync  = $null   # hashtable da operacao de delete em andamento
-    scanPS      = $null   # instancia PowerShell do scan async
 })
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -797,7 +812,7 @@ function Add-BreakdownRow([System.Windows.Controls.StackPanel]$panel, [string]$t
 
     $lTipo  = New-Object System.Windows.Controls.TextBlock
     $lTipo.Text       = $tipo
-    $lTipo.Foreground = Get-Brush "#666"
+    $lTipo.Foreground = Get-Brush "#888"
     $lTipo.FontSize   = 14
     $lTipo.Width      = 155
 
@@ -812,19 +827,35 @@ function Add-BreakdownRow([System.Windows.Controls.StackPanel]$panel, [string]$t
     $panel.Children.Add($row) | Out-Null
 }
 
-# Calcula tamanho de arquivo ou pasta (recursivo)
-function Get-ItemSize([string]$Path) {
-    try {
-        if ([System.IO.Directory]::Exists($Path)) {
-            $sum = [long]0
-            foreach ($f in [System.IO.Directory]::GetFiles($Path, "*", [System.IO.SearchOption]::AllDirectories)) {
-                try { $sum += ([System.IO.FileInfo]::new($f)).Length } catch {}
-            }
-            $sum
-        } else {
-            ([System.IO.FileInfo]::new($Path)).Length
-        }
-    } catch { [long]0 }
+# Nota de status no card: icone + palavra, nunca so cor (acessibilidade)
+# ok = texto claro com check dourado; warn = ambar com triangulo
+function New-Note([string]$text, [switch]$Warn) {
+    $t = New-Object System.Windows.Controls.TextBlock
+    $t.FontSize     = 13
+    $t.TextWrapping = "Wrap"
+    $t.Foreground   = Get-Brush $(if ($Warn) { "#E0A83C" } else { "#e8e8e8" })
+    $icon = New-Object System.Windows.Documents.Run $(if ($Warn) { "$([char]0x26A0)  " } else { "$([char]0x2713)  " })
+    if (-not $Warn) { $icon.Foreground = Get-Brush "#FDEABF" }
+    $t.Inlines.Add($icon)
+    $t.Inlines.Add((New-Object System.Windows.Documents.Run $text))
+    $t
+}
+
+# Tipos de arquivo fantasma — fonte unica dos rotulos (breakdown na UI e no log)
+$JunkTypes = [ordered]@{ DS = ".DS_Store"; RF = "._* (forks)"; MX = "__MACOSX"; SP = ".Spotlight-V100"; TR = ".Trashes" }
+
+# Conta itens por tipo pelo nome (mesma regra do scan)
+function Get-Breakdown([string[]]$paths) {
+    $n = [ordered]@{ DS = 0; RF = 0; MX = 0; SP = 0; TR = 0 }
+    foreach ($p in $paths) {
+        $leaf = [System.IO.Path]::GetFileName($p)
+        if     ($leaf -eq ".DS_Store")       { $n["DS"]++ }
+        elseif ($leaf.StartsWith("._"))      { $n["RF"]++ }
+        elseif ($leaf -eq "__MACOSX")        { $n["MX"]++ }
+        elseif ($leaf -eq ".Spotlight-V100") { $n["SP"]++ }
+        elseif ($leaf -eq ".Trashes")        { $n["TR"]++ }
+    }
+    $n
 }
 
 function Format-Size([long]$bytes) {
@@ -902,40 +933,25 @@ $showScanResults = {
         $c["lblSize"].Text            = ""
         $c["spBreakdown"].Children.Clear()
         $c["btnSaveLog"].Visibility   = "Collapsed"
-        $lOk = New-Object System.Windows.Controls.TextBlock
-        $lOk.Text       = "Pasta limpa! Nenhum arquivo macOS encontrado."
-        $lOk.Foreground = Get-Brush "#7AB898"
-        $lOk.FontSize   = 14
-        $c["spBreakdown"].Children.Add($lOk) | Out-Null
+        $c["spBreakdown"].Children.Add((New-Note "Pasta limpa! Nenhum arquivo macOS encontrado.")) | Out-Null
         $c["btnToggle"].Visibility    = "Collapsed"
         $c["lblStatus"].Text          = "Scan concluido. Pasta ja esta limpa."
     } else {
-        $totalBytes = [long]0
-        foreach ($item in $found) { $totalBytes += Get-ItemSize $item }
-        $app["lastScanSize"] = $totalBytes
-
-        $ds = @($found | Where-Object { $_ -match "[/\\]\.DS_Store$"                }).Count
-        $rf = @($found | Where-Object { (Split-Path $_ -Leaf) -like "._*"           }).Count
-        $mx = @($found | Where-Object { (Split-Path $_ -Leaf) -eq "__MACOSX"        }).Count
-        $sp = @($found | Where-Object { (Split-Path $_ -Leaf) -eq ".Spotlight-V100" }).Count
-        $tr = @($found | Where-Object { (Split-Path $_ -Leaf) -eq ".Trashes"        }).Count
-
         $numFmt = $found.Count.ToString("N0")
+        $bytes  = [long]$app["lastScanSize"]
         $c["lblCount"].Text      = $numFmt
         $c["lblCountLabel"].Text = "itens encontrados"
-        $c["lblSize"].Text       = "$(Format-Size $totalBytes) para liberar"
+        $c["lblSize"].Text       = if ($bytes -gt 0) { "$(Format-Size $bytes) para liberar" } else { "" }
 
         $c["spBreakdown"].Children.Clear()
-        if ($ds -gt 0) { Add-BreakdownRow $c["spBreakdown"] ".DS_Store"      $ds }
-        if ($rf -gt 0) { Add-BreakdownRow $c["spBreakdown"] "._* (forks)"    $rf }
-        if ($mx -gt 0) { Add-BreakdownRow $c["spBreakdown"] "__MACOSX"       $mx }
-        if ($sp -gt 0) { Add-BreakdownRow $c["spBreakdown"] ".Spotlight-V100" $sp }
-        if ($tr -gt 0) { Add-BreakdownRow $c["spBreakdown"] ".Trashes"       $tr }
+        $counts = Get-Breakdown $found
+        foreach ($k in $JunkTypes.Keys) {
+            if ($counts[$k] -gt 0) { Add-BreakdownRow $c["spBreakdown"] $JunkTypes[$k] $counts[$k] }
+        }
 
         $c["btnToggle"].Visibility = "Visible"
         $c["btnDelete"].IsEnabled  = $true
         $c["lblStatus"].Text       = "$numFmt itens prontos para mover para Lixeira."
-        $app["scanBreakdown"]      = @{ DS=$ds; RF=$rf; MX=$mx; SP=$sp; TR=$tr }
 
         $found | ForEach-Object { $c["lstFiles"].Items.Add($_) | Out-Null }
     }
@@ -944,21 +960,14 @@ $showScanResults = {
 
 # ── Scan assincrono (PowerShell runspace dedicado) ────────────────────────────
 $doScan = {
-    # Sincroniza app.folder com o texto atual do campo (editar sem Enter tambem funciona)
+    # Campo editado sem Enter: valida e adota o caminho digitado
     $typed = $c["lblPath"].Text.Trim()
-    if ($typed -and $typed -ne "Nenhuma pasta selecionada") {
-        if ([System.IO.Directory]::Exists($typed)) {
-            if ($typed -ne $app.folder) {
-                $app.folder              = $typed
-                $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
-                & $resetPathError
-                Save-FolderHistory $typed
-                & $updateHistoryBtn
-            }
-        } else {
+    if ($typed -and $typed -ne "Nenhuma pasta selecionada" -and $typed -ne $app.folder) {
+        if (-not [System.IO.Directory]::Exists($typed)) {
             & $setPathError "Pasta nao encontrada. Verifique o caminho digitado."
             return
         }
+        & $setFolder $typed
     }
 
     if (-not $app.folder) { return }
@@ -966,59 +975,66 @@ $doScan = {
     & $setScanningState
 
     # Captura estado dos filtros antes de spawnar thread
-    $doDS  = [bool]$c["chkDS"].IsChecked
-    $doRF  = [bool]$c["chkRF"].IsChecked
-    $doMX  = [bool]$c["chkMX"].IsChecked
-    $doSP  = [bool]$c["chkSP"].IsChecked
-    $doTR  = [bool]$c["chkTR"].IsChecked
-    $doRec = [bool]$c["chkRecursive"].IsChecked
+    $want = @{
+        DS = [bool]$c["chkDS"].IsChecked; RF = [bool]$c["chkRF"].IsChecked; MX = [bool]$c["chkMX"].IsChecked
+        SP = [bool]$c["chkSP"].IsChecked; TR = [bool]$c["chkTR"].IsChecked
+    }
+    $doRec    = [bool]$c["chkRecursive"].IsChecked
     $scanPath = $app.folder
 
     $scanSync = [System.Collections.Hashtable]::Synchronized(@{
-        done = $false; cancel = $false; result = $null; error = ""
+        done = $false; cancel = $false; result = $null; error = ""; bytes = 0
     })
     $app["scanSync"] = $scanSync
 
-    # Script de scan — roda em runspace separado, sem acesso a funcoes do script pai
+    # Script de scan — roda em runspace separado, sem acesso a funcoes do script pai.
+    # Passada unica pela arvore: nao entra em pastas ja marcadas (__MACOSX etc.)
+    # nem em junctions/symlinks, que poderiam levar para fora da pasta escolhida.
     $scanScript = {
-        param($scanPath, $sync, $doDS, $doRF, $doMX, $doSP, $doTR, $doRec)
+        param($scanPath, $sync, $want, $doRec)
         try {
-            $list = [System.Collections.Generic.List[string]]::new()
-            $opts = @{ LiteralPath=$scanPath; Force=$true; ErrorAction='SilentlyContinue' }
-            if ($doRec) { $opts["Recurse"] = $true }
+            $order = "DS", "RF", "MX", "SP", "TR"
+            $lists = @{}
+            foreach ($k in $order) { $lists[$k] = [System.Collections.Generic.List[string]]::new() }
+            $bytes = [long]0
+            $n     = 0
+            $root  = [System.IO.DirectoryInfo]::new($scanPath)
+            $stack = [System.Collections.Generic.Stack[System.IO.DirectoryInfo]]::new()
+            $stack.Push($root)
 
-            if ($doDS -and -not $sync["cancel"]) {
-                Get-ChildItem @opts -Filter ".DS_Store" |
-                    Where-Object { -not $_.PSIsContainer } |
-                    ForEach-Object { $list.Add($_.FullName) }
-                $sync["found"] = $list.Count
-            }
-            if ($doRF -and -not $sync["cancel"]) {
-                Get-ChildItem @opts |
-                    Where-Object { $_.Name -like "._*" -and -not $_.PSIsContainer } |
-                    ForEach-Object { $list.Add($_.FullName) }
-                $sync["found"] = $list.Count
-            }
-            if ($doMX -and -not $sync["cancel"]) {
-                Get-ChildItem @opts -Filter "__MACOSX" |
-                    Where-Object { $_.PSIsContainer } |
-                    ForEach-Object { $list.Add($_.FullName) }
-                $sync["found"] = $list.Count
-            }
-            if ($doSP -and -not $sync["cancel"]) {
-                Get-ChildItem @opts -Filter ".Spotlight-V100" |
-                    Where-Object { $_.PSIsContainer } |
-                    ForEach-Object { $list.Add($_.FullName) }
-                $sync["found"] = $list.Count
-            }
-            if ($doTR -and -not $sync["cancel"]) {
-                Get-ChildItem @opts -Filter ".Trashes" |
-                    Where-Object { $_.PSIsContainer } |
-                    ForEach-Object { $list.Add($_.FullName) }
-                $sync["found"] = $list.Count
+            while ($stack.Count -gt 0 -and -not $sync["cancel"]) {
+                $dir = $stack.Pop()
+                try { $entries = $dir.GetFileSystemInfos() }
+                catch { if ($dir -eq $root) { throw }; continue }   # subpasta sem acesso: ignora
+
+                foreach ($e in $entries) {
+                    $isDir = $e -is [System.IO.DirectoryInfo]
+                    $k = $null
+                    if ($isDir) {
+                        if     ($e.Name -eq "__MACOSX")        { $k = "MX" }
+                        elseif ($e.Name -eq ".Spotlight-V100") { $k = "SP" }
+                        elseif ($e.Name -eq ".Trashes")        { $k = "TR" }
+                    }
+                    elseif ($e.Name -eq ".DS_Store")  { $k = "DS" }
+                    elseif ($e.Name.StartsWith("._")) { $k = "RF" }
+
+                    if ($k -and $want[$k]) {
+                        $lists[$k].Add($e.FullName)
+                        $n++; $sync["found"] = $n
+                        if ($isDir) {
+                            try { foreach ($f in $e.EnumerateFiles("*", [System.IO.SearchOption]::AllDirectories)) { $bytes += $f.Length } } catch {}
+                        } else { $bytes += $e.Length }
+                    }
+                    elseif ($isDir -and $doRec -and -not $e.LinkType) {
+                        $stack.Push($e)
+                    }
+                }
             }
 
-            $sync["result"] = @($list | Select-Object -Unique | ForEach-Object { [string]$_ })
+            $all = [System.Collections.Generic.List[string]]::new()
+            foreach ($k in $order) { $lists[$k].Sort([System.StringComparer]::OrdinalIgnoreCase); $all.AddRange($lists[$k]) }
+            $sync["bytes"]  = $bytes
+            $sync["result"] = $all.ToArray()
         } catch {
             $sync["error"]  = $_.Exception.Message
             $sync["result"] = @()
@@ -1028,13 +1044,9 @@ $doScan = {
 
     $ps = [PowerShell]::Create()
     [void]$ps.AddScript($scanScript).AddParameters(@{
-        scanPath = $scanPath; sync = $scanSync
-        doDS = $doDS; doRF = $doRF; doMX = $doMX; doSP = $doSP; doTR = $doTR
-        doRec = $doRec
+        scanPath = $scanPath; sync = $scanSync; want = $want; doRec = $doRec
     })
     $handle = $ps.BeginInvoke()
-    $app["scanPS"]     = $ps
-    $app["scanHandle"] = $handle
 
     # Timer: aguarda conclusao e atualiza UI
     $scanTmr = New-Object System.Windows.Threading.DispatcherTimer
@@ -1056,12 +1068,15 @@ $doScan = {
         $app["scanSync"] = $null
 
         $wasCancelled = [bool]$scanSync["cancel"]
+        $scanError    = $scanSync["error"]
         $found = if ($null -ne $scanSync["result"] -and -not $wasCancelled) {
             [string[]]$scanSync["result"]
         } else { @() }
-        $app.items = $found
+        $app.items           = $found
+        $app["lastScanSize"] = [long]$scanSync["bytes"]
 
-        & $showScanResults -found $found -wasCancelled $wasCancelled
+        & $showScanResults -found $found -wasCancelled ($wasCancelled -or $scanError)
+        if ($scanError) { $c["lblStatus"].Text = "$([char]0x26A0)  Erro no scan: $scanError" }
     }.GetNewClosure()
 
     $scanTmr.Add_Tick($scanTick)
@@ -1071,17 +1086,18 @@ $doScan = {
 # ── Helpers: estado de erro / sucesso no campo de path ───────────────────────
 $setPathError = {
     param([string]$msg)
-    $c["pathBorder"].BorderBrush     = Get-Brush "#C4907A"
+    $c["pathBorder"].BorderBrush     = Get-Brush "#E0A83C"
     $c["pathBorder"].BorderThickness = [System.Windows.Thickness]::new(2)
-    $c["lblPath"].Foreground         = Get-Brush "#C4907A"
+    $c["lblPath"].Foreground         = Get-Brush "#E0A83C"
     $c["lblStatus"].Text             = "$([char]0x26A0)  $msg"
-    $c["lblStatus"].Foreground       = Get-Brush "#C4907A"
+    $c["lblStatus"].Foreground       = Get-Brush "#E0A83C"
 }.GetNewClosure()
 
 $resetPathError = {
-    $c["pathBorder"].BorderBrush     = Get-Brush "#2a2a2a"
+    # ClearValue devolve a borda ao Style (cinza, dourada no foco)
+    $c["pathBorder"].ClearValue([System.Windows.Controls.Border]::BorderBrushProperty)
     $c["pathBorder"].BorderThickness = [System.Windows.Thickness]::new(1)
-    $c["lblStatus"].Foreground       = Get-Brush "#555"
+    $c["lblStatus"].Foreground       = Get-Brush "#888"
 }.GetNewClosure()
 
 # ── Helper: fecha painel de detalhes ─────────────────────────────────────────
@@ -1118,8 +1134,23 @@ $syncWindowHeight = {
 
 # ── Helper: habilita botao de historico se houver pastas salvas ───────────────
 $updateHistoryBtn = {
-    $h = Load-FolderHistory
+    $h = @(Load-FolderHistory)
     $c["btnHistory"].IsEnabled = ($h.Count -gt 0)
+}.GetNewClosure()
+
+# ── Helper: adota uma pasta valida como alvo (campo, historico, botoes) ──────
+# Ponto unico usado por Enter, historico, Selecionar Pasta, drag-drop e startup
+$setFolder = {
+    param([string]$path)
+    $app.folder              = $path
+    $c["lblPath"].Text       = $path
+    $c["lblPath"].ScrollToEnd()
+    $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
+    & $resetPathError
+    $c["btnScan"].IsEnabled  = $true
+    & $closeDetails
+    Save-FolderHistory $path
+    & $updateHistoryBtn
 }.GetNewClosure()
 
 # ── Eventos ────────────────────────────────────────────────────────────────────
@@ -1148,13 +1179,7 @@ $c["lblPath"].Add_KeyDown({
     if ($e.Key.ToString() -eq "Return") {
         $typed = $c["lblPath"].Text.Trim()
         if ([System.IO.Directory]::Exists($typed)) {
-            $app.folder              = $typed
-            $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
-            & $resetPathError
-            $c["btnScan"].IsEnabled  = $true
-            & $closeDetails
-            Save-FolderHistory $typed
-            & $updateHistoryBtn
+            & $setFolder $typed
             & $doScan
         } else {
             & $setPathError "Pasta nao encontrada. Verifique o caminho digitado."
@@ -1177,15 +1202,7 @@ $c["lstHistory"].Add_SelectionChanged({
     $sel = $c["lstHistory"].SelectedItem
     if ($sel -and [System.IO.Directory]::Exists($sel)) {
         $c["popHistory"].IsOpen = $false
-        $app.folder              = $sel
-        $c["lblPath"].Text       = $sel
-        $c["lblPath"].ScrollToEnd()
-        $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
-        & $resetPathError
-        $c["btnScan"].IsEnabled  = $true
-        & $closeDetails
-        Save-FolderHistory $sel
-        & $updateHistoryBtn
+        & $setFolder $sel
         & $doScan
     }
 })
@@ -1199,15 +1216,7 @@ $c["btnSelect"].Add_Click({
     $hwnd   = (New-Object System.Windows.Interop.WindowInteropHelper($window)).Handle
     $picked = [FolderDialog]::ShowDialog($hwnd, "Selecionar pasta para limpar arquivos macOS")
     if ($picked) {
-        $app.folder              = $picked
-        $c["lblPath"].Text       = $picked
-        $c["lblPath"].ScrollToEnd()
-        $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
-        & $resetPathError
-        $c["btnScan"].IsEnabled  = $true
-        & $closeDetails
-        Save-FolderHistory $picked
-        & $updateHistoryBtn
+        & $setFolder $picked
         & $doScan
     }
 })
@@ -1266,15 +1275,7 @@ $window.Add_Drop({
         $files  = $e.Data.GetData([System.Windows.DataFormats]::FileDrop)
         $folder = @($files) | Where-Object { [System.IO.Directory]::Exists($_) } | Select-Object -First 1
         if ($folder) {
-            $app.folder              = $folder
-            $c["lblPath"].Text       = $folder
-            $c["lblPath"].ScrollToEnd()
-            $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
-            & $resetPathError
-            $c["btnScan"].IsEnabled  = $true
-            & $closeDetails
-            Save-FolderHistory $folder
-            & $updateHistoryBtn
+            & $setFolder $folder
             & $doScan
         }
     }
@@ -1312,13 +1313,21 @@ $c["btnDelete"].Add_Click({
     $total = $app.items.Count
     $path  = $app.folder
 
-    $r = [System.Windows.MessageBox]::Show(
-        "Mover $total itens para a Lixeira?`n`n$path`n`nVoce pode restaura-los pela Lixeira do Windows.",
-        "Confirmar",
-        [System.Windows.MessageBoxButton]::YesNo,
-        [System.Windows.MessageBoxImage]::Question
-    )
-    if ($r -ne [System.Windows.MessageBoxResult]::Yes) { return }
+    # Pendrive e rede nao tem Lixeira: SHFileOperation exclui permanentemente sem avisar
+    $noBin = $path.StartsWith("\\")
+    if (-not $noBin) {
+        try { $noBin = "$([System.IO.DriveInfo]::new([System.IO.Path]::GetPathRoot($path)).DriveType)" -in "Removable", "Network" } catch {}
+    }
+    $r = if ($noBin) {
+        [System.Windows.MessageBox]::Show(
+            "Excluir $total itens PERMANENTEMENTE?`n`n$path`n`nEsta unidade nao tem Lixeira: os itens nao poderao ser restaurados.",
+            "Confirmar", "YesNo", "Warning")
+    } else {
+        [System.Windows.MessageBox]::Show(
+            "Mover $total itens para a Lixeira?`n`n$path`n`nVoce pode restaura-los pela Lixeira do Windows.",
+            "Confirmar", "YesNo", "Question")
+    }
+    if ($r -ne "Yes") { return }
 
     $c["btnDelete"].Visibility = "Collapsed"
     $c["btnCancel"].Visibility = "Visible"
@@ -1360,9 +1369,16 @@ $c["btnDelete"].Add_Click({
             $tmr.Stop()
             $app["deleteSync"] = $null
 
-            $del = [int]$sync["deleted"]
-            $err = [int]$sync["errors"]
+            # So entra no log o que foi de fato processado e nao falhou
+            $cancelled = [bool]$sync["cancel"]
+            $failed    = if ($sync["failed"]) { [string[]]$sync["failed"] } else { @() }
+            $processed = if ($prog -gt 0) { $items[0..($prog - 1)] } else { @() }
+            $moved     = @($processed | Where-Object { $failed -notcontains $_ })
+
+            $del    = $moved.Count
+            $err    = $failed.Count
             $delFmt = $del.ToString("N0")
+            $verb   = if ($noBin) { "excluidos" } else { "movidos" }
 
             $c["pbMain"].Value         = 100
             $c["lblProgPct"].Text      = "100%"
@@ -1377,36 +1393,33 @@ $c["btnDelete"].Add_Click({
 
             $c["spBreakdown"].Children.Clear()
 
-            if ($err -eq 0) {
-                $c["lblCount"].Text      = $delFmt
-                $c["lblCountLabel"].Text = "itens na Lixeira"
-                $c["lblSize"].Text       = ""
-                $lOk = New-Object System.Windows.Controls.TextBlock
-                $lOk.Text       = "Pasta limpa! Restaure pela Lixeira se necessario."
-                $lOk.Foreground = Get-Brush "#7AB898"
-                $lOk.FontSize   = 14
-                $c["spBreakdown"].Children.Add($lOk) | Out-Null
-                $c["lblStatus"].Text = "$delFmt itens movidos para a Lixeira."
+            $c["lblCount"].Text = $delFmt
+            $c["lblSize"].Text  = ""
+            if ($err -eq 0 -and -not $cancelled) {
+                $c["lblCountLabel"].Text = if ($noBin) { "itens excluidos" } else { "itens na Lixeira" }
+                $note = New-Note $(if ($noBin) { "Pasta limpa!" } else { "Pasta limpa! Restaure pela Lixeira se necessario." })
             } else {
-                $c["lblCount"].Text      = $delFmt
-                $c["lblCountLabel"].Text = "movidos  $([char]0x00B7)  $err erros"
-                $c["lblSize"].Text       = ""
-                $lErr = New-Object System.Windows.Controls.TextBlock
-                $lErr.Text       = "Alguns itens nao puderam ser movidos (permissao negada?)."
-                $lErr.Foreground = Get-Brush "#C4907A"
-                $lErr.FontSize   = 14
-                $c["spBreakdown"].Children.Add($lErr) | Out-Null
-                $c["lblStatus"].Text = "$delFmt movidos, $err erros. Verifique permissoes."
+                $why = @()
+                if ($err -gt 0) { $why += "$err erros" }
+                if ($cancelled) { $why += "cancelado" }
+                $c["lblCountLabel"].Text = "$verb  $([char]0x00B7)  $($why -join ', ')"
+                $note = New-Note -Warn $(if ($cancelled) { "Operacao cancelada: $($total - $prog) itens nao foram processados." }
+                                         else { "Alguns itens nao puderam ser movidos (permissao negada?). Veja o log." })
             }
+            $c["spBreakdown"].Children.Add($note) | Out-Null
+            $c["lblStatus"].Text = "$delFmt itens $verb$(if (-not $noBin) { ' para a Lixeira' })."
 
             # Guarda dados para log e exibe botoes de acao pos-delete
-            $app["logItems"]     = $items
-            $app["logFolder"]    = $path
-            $app["logDate"]      = [datetime]::Now
-            $app["logSize"]      = $logSize
-            $app["logBreakdown"] = $app["scanBreakdown"]
+            $app["logItems"]   = $moved
+            $app["logFailed"]  = $failed
+            $app["logPartial"] = $cancelled -or $err -gt 0
+            $app["logTotal"]   = $total
+            $app["logNoBin"]   = $noBin
+            $app["logFolder"]  = $path
+            $app["logDate"]    = [datetime]::Now
+            $app["logSize"]    = $logSize
             $c["btnSaveLog"].Visibility        = "Visible"
-            $c["btnOpenRecycleBin"].Visibility = "Visible"
+            $c["btnOpenRecycleBin"].Visibility = if ($noBin) { "Collapsed" } else { "Visible" }
 
             # Restaura UI — usuario decide quando re-escanear
             $c["btnCancel"].Visibility = "Collapsed"
@@ -1439,28 +1452,30 @@ $c["btnSaveLog"].Add_Click({
 
         $logDateStart = $app["logDateStart"]
         $logItemTimes = $app["logItemTimes"]
-        $logBreakdown = $app["logBreakdown"]
+        $logFailed    = $app["logFailed"]
+        $partial      = [bool]$app["logPartial"]
 
         $lines = [System.Collections.Generic.List[string]]::new()
-        $lines.Add("GhostSweep v1.0 $([char]0x2014) Log de limpeza")
+        $lines.Add("GhostSweep v$AppVersion $([char]0x2014) Log de limpeza")
         $lines.Add("=" * 60)
         $lines.Add("Inicio:  $($logDateStart.ToString('dd/MM/yyyy HH:mm:ss'))")
         $lines.Add("Fim:     $($logDate.ToString('dd/MM/yyyy HH:mm:ss'))")
         $lines.Add("Pasta:   $logFolder")
-        $lines.Add("Total:   $($logItems.Count.ToString('N0')) itens  ($(Format-Size $logSize))")
+        # Tamanho medido no scan so vale se tudo foi processado
+        if ($partial) { $lines.Add("Total:   $($logItems.Count.ToString('N0')) de $($app["logTotal"]) itens (operacao parcial)") }
+        else          { $lines.Add("Total:   $($logItems.Count.ToString('N0')) itens  ($(Format-Size $logSize))") }
 
-        if ($logBreakdown) {
+        $bd = Get-Breakdown $logItems
+        if ($logItems.Count -gt 0) {
             $lines.Add("")
             $lines.Add("RESUMO POR TIPO:")
-            if ($logBreakdown.DS -gt 0) { $lines.Add("  .DS_Store:        $($logBreakdown.DS.ToString('N0'))") }
-            if ($logBreakdown.RF -gt 0) { $lines.Add("  ._* (forks):      $($logBreakdown.RF.ToString('N0'))") }
-            if ($logBreakdown.MX -gt 0) { $lines.Add("  __MACOSX:         $($logBreakdown.MX.ToString('N0'))") }
-            if ($logBreakdown.SP -gt 0) { $lines.Add("  .Spotlight-V100:  $($logBreakdown.SP.ToString('N0'))") }
-            if ($logBreakdown.TR -gt 0) { $lines.Add("  .Trashes:         $($logBreakdown.TR.ToString('N0'))") }
+            foreach ($k in $JunkTypes.Keys) {
+                if ($bd[$k] -gt 0) { $lines.Add("  $("$($JunkTypes[$k]):".PadRight(18))$($bd[$k].ToString('N0'))") }
+            }
         }
 
         $lines.Add("")
-        $lines.Add("ITENS MOVIDOS PARA A LIXEIRA:")
+        $lines.Add($(if ($app["logNoBin"]) { "ITENS EXCLUIDOS PERMANENTEMENTE:" } else { "ITENS MOVIDOS PARA A LIXEIRA:" }))
         $lines.Add("-" * 60)
         $lines.Add("$("MODIFICADO EM".PadRight(22))ARQUIVO")
         $lines.Add("-" * 60)
@@ -1471,8 +1486,19 @@ $c["btnSaveLog"].Add_Click({
             $lines.Add("$($ts.PadRight(22))$item")
         }
 
-        [System.IO.File]::WriteAllLines($dlg.FileName, $lines, [System.Text.Encoding]::UTF8)
-        $c["lblStatus"].Text = "Log salvo: $($dlg.FileName)"
+        if ($logFailed.Count -gt 0) {
+            $lines.Add("")
+            $lines.Add("FALHARAM (continuam no disco):")
+            $lines.Add("-" * 60)
+            foreach ($item in $logFailed) { $lines.Add($item) }
+        }
+
+        try {
+            [System.IO.File]::WriteAllLines($dlg.FileName, $lines, [System.Text.Encoding]::UTF8)
+            $c["lblStatus"].Text = "Log salvo: $($dlg.FileName)"
+        } catch {
+            $c["lblStatus"].Text = "Erro ao salvar log: $($_.Exception.Message)"
+        }
     }
 }.GetNewClosure())
 
@@ -1508,15 +1534,11 @@ $window.Add_KeyDown({
 }.GetNewClosure())
 
 # ── Carregar ultima pasta usada ao iniciar ────────────────────────────────────
-& $updateHistoryBtn
-$lastF = (Load-FolderHistory)[0]
+# @() evita que historico com 1 item vire string e [0] pegue so a primeira letra
+$lastF = @(Load-FolderHistory)[0]
 if ($lastF) {
-    $app.folder              = $lastF
-    $c["lblPath"].Text       = $lastF
-    $c["lblPath"].ScrollToEnd()
-    $c["lblPath"].Foreground = Get-Brush "#e8e8e8"
-    $c["btnScan"].IsEnabled  = $true
-    $c["lblStatus"].Text     = "Ultima pasta carregada. Clique em Escanear ou arraste uma nova."
+    & $setFolder $lastF
+    $c["lblStatus"].Text = "Ultima pasta carregada. Clique em Escanear ou arraste uma nova."
 }
 
 
@@ -1526,6 +1548,15 @@ $sw      = [System.Windows.SystemParameters]::PrimaryScreenWidth
 $winW    = [Math]::Round([Math]::Min([Math]::Max(560.0, $sw * 0.32), 720.0))
 $window.Width    = $winW
 $window.MinWidth = $winW - 20
+
+# Barra de titulo escura (Windows 10 20H1+ / 11); versoes antigas ignoram
+if (-not ([System.Management.Automation.PSTypeName]'GsDwm').Type) {
+    Add-Type 'using System; using System.Runtime.InteropServices; public class GsDwm { [DllImport("dwmapi.dll")] public static extern int DwmSetWindowAttribute(IntPtr h, int a, ref int v, int s); }'
+}
+$window.Add_SourceInitialized({
+    $dark = 1
+    [void][GsDwm]::DwmSetWindowAttribute((New-Object System.Windows.Interop.WindowInteropHelper($window)).Handle, 20, [ref]$dark, 4)
+})
 
 # Fixa MinHeight ao renderizar — impede redimensionar abaixo do conteudo inicial
 $window.Add_ContentRendered({
